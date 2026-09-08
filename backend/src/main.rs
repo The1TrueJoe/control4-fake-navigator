@@ -392,14 +392,35 @@ async fn icon_handler(State(s): State<AppState>, Path(path): Path<String>) -> im
     }
 }
 
-async fn wallpaper_handler() -> impl IntoResponse {
+/// Serve the room background. In live mode this proxies the REAL Control4 on-screen
+/// wallpaper straight from the controller (nginx static at
+/// `/wallpaper/onscreen/default/<name>.jpg`) — the authentic navigator art. The
+/// name defaults to Control4's system default and can be overridden with
+/// `C4_WALLPAPER` (any file in that folder, e.g. `3.0-i-soblue.jpg`). Per-room
+/// selection isn't exposed by the controller's REST API, so it's one for now.
+/// Falls back to the bundled image in demo mode or if the fetch fails.
+async fn wallpaper_handler(State(s): State<AppState>) -> impl IntoResponse {
+    if let Some(icons) = s.icons.as_ref() {
+        let name = env_clean("C4_WALLPAPER").unwrap_or_else(|| "3.0-a-default.jpg".to_string());
+        if let Some((ctype, bytes)) = icons.fetch(&format!("wallpaper/onscreen/default/{name}")).await {
+            return (
+                [
+                    (axum::http::header::CONTENT_TYPE, ctype),
+                    (axum::http::header::CACHE_CONTROL, "public, max-age=86400".to_string()),
+                ],
+                bytes,
+            )
+                .into_response();
+        }
+    }
     (
         [
-            (axum::http::header::CONTENT_TYPE, "image/jpeg"),
-            (axum::http::header::CACHE_CONTROL, "public, max-age=86400"),
+            (axum::http::header::CONTENT_TYPE, "image/jpeg".to_string()),
+            (axum::http::header::CACHE_CONTROL, "public, max-age=86400".to_string()),
         ],
-        WALLPAPER,
+        WALLPAPER.to_vec(),
     )
+        .into_response()
 }
 
 async fn state_handler(State(s): State<AppState>) -> impl IntoResponse {
