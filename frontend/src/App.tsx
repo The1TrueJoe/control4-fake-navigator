@@ -84,7 +84,7 @@ export function App() {
     <div className="app">
       <div className="scrim" />
       <aside className="sidebar">
-        <div className="brand">openHC</div>
+        <div className="brand">Navigator</div>
         <Section className="rooms" focusKey="rooms">
           {rooms.map((r) => (
             <Tile
@@ -104,7 +104,7 @@ export function App() {
       <main className="main">
         <header className="topbar">
           <div className="title">
-            <h1>{room?.name ?? 'openHC Navigator'}</h1>
+            <h1>{room?.name ?? 'Control4 Navigator'}</h1>
             <div className="subtitle">{room ? `${devices.length} in ${menu}` : ''}</div>
           </div>
           <div className="topright">

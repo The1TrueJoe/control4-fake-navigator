@@ -1748,13 +1748,13 @@
  {
   "type": 6,
   "typeName": "device",
-  "name": "openHC Onscreen CONTROLLER test",
+  "name": "Nav Sink (test)",
   "parentId": 31,
   "id": 67,
   "proxy": "controller",
   "proxyMeta": [
    {
-    "name": "openHC Onscreen",
+    "name": "Nav Sink",
     "proxybindingid": 5001,
     "proxy": "controller"
    },
@@ -1782,7 +1782,7 @@
   "created": "2026-09-07",
   "modified": "2026-09-07T20:50:26Z",
   "model": "ohc-onscreen-controller",
-  "manufacturer": "openHC",
+  "manufacturer": "Joseph Telaak",
   "URIs": {
    "commands": "/api/v1/items/67/commands",
    "zigbee": "/api/v1/items/67/zigbee"
@@ -1791,7 +1791,7 @@
  {
   "type": 7,
   "typeName": "device",
-  "name": "openHC Onscreen",
+  "name": "Nav Sink",
   "parentId": 67,
   "id": 68,
   "filename": "controller.c4i",
@@ -1799,7 +1799,7 @@
   "proxyOrder": 1,
   "proxyMeta": [
    {
-    "name": "openHC Onscreen",
+    "name": "Nav Sink",
     "proxybindingid": 5001,
     "proxy": "controller"
    }
@@ -1818,7 +1818,7 @@
   "largeImage": "devices_lg/cmp_ico32_ea0.gif",
   "smallImage": "devices_sm/cmp_ico16_ea0.gif",
   "protocolId": 67,
-  "protocolName": "openHC Onscreen CONTROLLER test",
+  "protocolName": "Nav Sink (test)",
   "protocolFilename": "ohconscreencontroller.c4z",
   "capabilities": {
    "auto_bind_onscreen_selection": {
@@ -1854,7 +1854,7 @@
   "proxyOrder": 2,
   "proxyMeta": [
    {
-    "name": "openHC Onscreen",
+    "name": "Nav Sink",
     "proxybindingid": 5001,
     "proxy": "controller"
    }
@@ -1873,7 +1873,7 @@
   "largeImage": "devices_lg/control4_touchpad_32.gif",
   "smallImage": "devices_sm/control4_touchpad_16.gif",
   "protocolId": 67,
-  "protocolName": "openHC Onscreen CONTROLLER test",
+  "protocolName": "Nav Sink (test)",
   "protocolFilename": "ohconscreencontroller.c4z",
   "capabilities": {
    "has_navigator": true,

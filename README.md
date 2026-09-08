@@ -1,5 +1,15 @@
 # control4-fake-navigator
 
+> ⚠️ **Proof of concept, not a product.** This exists to prove it's *possible* to
+> build your own Control4 on-screen navigator — driver relay in, project sync,
+> live control back out. **The UI is deliberately rough and is not meant to be a
+> good/production UI.** Treat it as a working reference for the plumbing.
+>
+> **Design north star (for real UI work):** a **10‑ft TV navigation UI** — couch
+> distance, focus‑first, remote‑driven: large type, big hit targets, minimal text
+> density, one clear focus at a time, generous spacing. Optimize for a TV across
+> the room, not a desktop up close.
+
 A DIY Control4 on-screen navigator: a **React/WebKit UI** (Norigin spatial
 navigation) driven by a **Rust backend** that receives the room's remote keypresses
 from the on-screen driver and live-syncs the Control4 project over the REST API.
@@ -9,7 +19,7 @@ room the remote is controlling), and navigates with the physical remote — vali
 end-to-end against a real controller.
 
 ```
- C4 remote ─▶ Director ─▶ ohc on-screen driver (controller proxy)
+ C4 remote ─▶ Director ─▶ on-screen driver (controller proxy)
                               │ relays nav keys (NDJSON)
                               ▼
   backend (Rust, uses control4-navigator-sink-lib as a submodule)
@@ -49,7 +59,7 @@ Open **http://localhost:8080** — you'll see rooms (Room, Bathroom) and their d
 Arrow keys / Enter navigate (Norigin). This is the UI you'll ship.
 
 ### 2. Add the driver to Control4 (to drive it with the real remote)
-1. Build/import the on-screen driver (`lib/driver/` → `ohc-nav-sink.c4z`) in Composer Pro.
+1. Build/import the on-screen driver (`lib/driver/` → `c4-nav-sink.c4z`) in Composer Pro.
 2. Set its **Target IP Address** to the machine running this (your Mac/Pi's LAN IP)
    and **Target Port** to **9010**.
 3. Bind **HDMI (Audio/Video)** to a TV input; the Onscreen Navigator auto-binds.
