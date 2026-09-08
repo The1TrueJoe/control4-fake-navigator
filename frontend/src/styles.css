@@ -1,0 +1,35 @@
+:root {
+  --bg: #0b0e14; --panel: #131823; --tile: #1b2331; --tile2: #232d3f;
+  --fg: #e8edf5; --muted: #8896ad; --accent: #4da3ff; --ok: #3ad29f; --bad: #ff6b6b;
+}
+* { box-sizing: border-box; }
+html, body, #root { height: 100%; margin: 0; }
+body { background: var(--bg); color: var(--fg); font: 16px/1.4 -apple-system, system-ui, sans-serif; overflow: hidden; }
+.app { display: flex; flex-direction: column; height: 100%; }
+
+.topbar { display: flex; align-items: center; justify-content: space-between;
+  padding: 14px 28px; background: var(--panel); border-bottom: 1px solid #0006; }
+.brand { font-size: 20px; font-weight: 700; letter-spacing: .3px; }
+.status { display: flex; align-items: center; gap: 10px; color: var(--muted); font-size: 14px; }
+.dot { width: 9px; height: 9px; border-radius: 50%; display: inline-block; }
+.dot.ok { background: var(--ok); } .dot.bad { background: var(--bad); }
+.pill { background: #0006; border: 1px solid #ffffff14; padding: 3px 10px; border-radius: 999px; color: var(--fg); }
+.pill.nav { color: #0b0e14; background: var(--accent); border-color: transparent; font-weight: 600; }
+
+.view { padding: 28px 40px; overflow: auto; }
+.view h1 { font-size: 34px; margin: 0 0 20px; }
+
+.tabs { display: flex; gap: 12px; margin-bottom: 24px; flex-wrap: wrap; }
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 18px; }
+
+.tile { background: var(--tile); border: 2px solid transparent; border-radius: 16px;
+  padding: 22px 20px; min-height: 96px; display: flex; flex-direction: column; justify-content: center;
+  transition: transform .08s ease, border-color .08s ease, background .08s ease; }
+.tabs .tile { min-height: 0; padding: 12px 20px; border-radius: 999px; background: var(--tile2); }
+.tile-label { font-size: 19px; font-weight: 600; }
+.tile-sub { color: var(--muted); font-size: 13px; margin-top: 6px; text-transform: capitalize; }
+.tile.active { outline: 2px solid var(--ok); }
+.tile.focused { border-color: var(--accent); background: var(--tile2);
+  transform: scale(1.04); box-shadow: 0 8px 30px #4da3ff33; }
+
+.empty { color: var(--muted); font-size: 15px; padding: 10px 2px; }

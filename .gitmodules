@@ -1,0 +1,3 @@
+[submodule "lib"]
+	path = lib
+	url = /Users/josephtelaak/Documents/GitHub/control4-navigator-sink-lib
