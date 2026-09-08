@@ -129,6 +129,23 @@ impl c4::ProjectSource for C4Api {
     }
 }
 
+/// Serves a bundled sample project (captured from a real EA-3) so the UI can be
+/// tested with no controller or token. Active when C4_HOST/C4_TOKEN are unset.
+struct DemoSource;
+
+impl c4::ProjectSource for DemoSource {
+    fn get_json(&self, path: &str) -> c4::Result<serde_json::Value> {
+        let body = match path {
+            "/api/v1/rooms" => include_str!("../demo/rooms.json"),
+            "/api/v1/items?tree=false" => include_str!("../demo/items.json"),
+            "/api/v1/items/14/variables" => include_str!("../demo/room-14-variables.json"),
+            "/api/v1/items/31/variables" => include_str!("../demo/room-31-variables.json"),
+            _ => "[]",
+        };
+        serde_json::from_str(body).map_err(|e| C4Api::io(e.to_string()))
+    }
+}
+
 #[derive(Clone)]
 struct AppState {
     project: Arc<RwLock<c4::Project>>,
@@ -166,6 +183,10 @@ async fn main() {
     spawn_sink(state.clone(), sink_addr.clone());
     if let Some((host, token, _ctx, crx)) = cmd_tx {
         spawn_control(state.clone(), host, token, crx);
+    } else {
+        // Demo mode: populate the UI from the bundled sample project.
+        sync_project(&DemoSource as &dyn c4::ProjectSource, &state);
+        println!("[demo] serving bundled sample project — set C4_HOST/C4_TOKEN for live control");
     }
 
     let app = Router::new()
@@ -219,7 +240,7 @@ fn spawn_control(state: AppState, host: String, token: String, rx: mpsc::Receive
                 .expect("http client"),
         };
         loop {
-            sync_project(&api, &state);
+            sync_project(&api as &dyn c4::ProjectSource, &state);
             // Serve commands for ~15s, then resync.
             let deadline = Instant::now() + Duration::from_secs(15);
             loop {
@@ -245,7 +266,7 @@ fn spawn_control(state: AppState, host: String, token: String, rx: mpsc::Receive
     });
 }
 
-fn sync_project(api: &C4Api, state: &AppState) {
+fn sync_project(api: &dyn c4::ProjectSource, state: &AppState) {
     match c4::load_project(api) {
         Ok(mut project) => {
             let room_ids: Vec<u32> = project.rooms.keys().copied().collect();

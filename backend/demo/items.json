@@ -1,0 +1,2044 @@
+[
+ {
+  "type": 1,
+  "typeName": "root",
+  "name": "New Project",
+  "id": 1,
+  "parentId": 1,
+  "control": "rootdevice",
+  "URIs": {
+   "variables": "/api/v1/items/variables",
+   "commands": "/api/v1/items/commands"
+  }
+ },
+ {
+  "type": 9,
+  "typeName": "agent",
+  "control": "control4_agent_backup",
+  "name": "Backup",
+  "id": 2,
+  "parentId": 1,
+  "URIs": {
+   "variables": "/api/v1/items/2/variables",
+   "commands": "/api/v1/items/2/commands"
+  }
+ },
+ {
+  "type": 9,
+  "typeName": "agent",
+  "control": "control4_agent_adv_lighting",
+  "name": "Advanced Lighting",
+  "id": 3,
+  "parentId": 1,
+  "URIs": {
+   "commands": "/api/v1/items/3/commands"
+  }
+ },
+ {
+  "type": 9,
+  "typeName": "agent",
+  "control": "control4_agent_zwave_scenes",
+  "name": "Z-Wave Scenes",
+  "id": 4,
+  "parentId": 1,
+  "URIs": {
+   "commands": "/api/v1/items/4/commands"
+  }
+ },
+ {
+  "type": 9,
+  "typeName": "agent",
+  "control": "control4_agent_history",
+  "name": "History",
+  "id": 5,
+  "parentId": 1,
+  "URIs": {
+   "commands": "/api/v1/items/5/commands"
+  }
+ },
+ {
+  "type": 9,
+  "typeName": "agent",
+  "control": "control4_agent_identity",
+  "name": "Identity",
+  "id": 6,
+  "parentId": 1,
+  "URIs": {
+   "variables": "/api/v1/items/6/variables",
+   "commands": "/api/v1/items/6/commands"
+  }
+ },
+ {
+  "type": 9,
+  "typeName": "agent",
+  "control": "control4_agent_uiconfiguration",
+  "name": "UI Configuration",
+  "id": 7,
+  "parentId": 1,
+  "URIs": {
+   "commands": "/api/v1/items/7/commands"
+  }
+ },
+ {
+  "type": 9,
+  "typeName": "agent",
+  "control": "control4_agent_notification",
+  "name": "Push Notification",
+  "id": 8,
+  "parentId": 1,
+  "URIs": {
+   "commands": "/api/v1/items/8/commands"
+  }
+ },
+ {
+  "type": 9,
+  "typeName": "agent",
+  "control": "control4_agent_media_sessions",
+  "name": "Media Sessions",
+  "id": 9,
+  "parentId": 1,
+  "URIs": {
+   "variables": "/api/v1/items/9/variables",
+   "commands": "/api/v1/items/9/commands"
+  }
+ },
+ {
+  "type": 9,
+  "typeName": "agent",
+  "control": "lua_gen",
+  "name": "Color",
+  "id": 10,
+  "parentId": 1,
+  "URIs": {
+   "variables": "/api/v1/items/10/variables",
+   "commands": "/api/v1/items/10/commands"
+  }
+ },
+ {
+  "type": 2,
+  "typeName": "site",
+  "name": "Home",
+  "parentId": 1,
+  "id": 11,
+  "siteId": 11,
+  "siteName": "Home",
+  "largeImage": "locations_lg\\site3.gif",
+  "smallImage": "locations_sm\\site3.gif",
+  "siteOrder": 1
+ },
+ {
+  "type": 3,
+  "typeName": "building",
+  "name": "House",
+  "parentId": 11,
+  "id": 12,
+  "siteId": 11,
+  "siteName": "Home",
+  "buildingId": 12,
+  "buildingName": "House",
+  "largeImage": "locations_lg\\house.gif",
+  "smallImage": "locations_sm\\house.gif",
+  "buildingOrder": 1
+ },
+ {
+  "type": 4,
+  "typeName": "floor",
+  "name": "Main",
+  "parentId": 12,
+  "id": 13,
+  "siteId": 11,
+  "siteName": "Home",
+  "buildingId": 12,
+  "buildingName": "House",
+  "floorId": 13,
+  "floorName": "Main",
+  "largeImage": "locations_lg\\main_first_floor.gif",
+  "smallImage": "locations_sm\\main_first_floor.gif",
+  "floorOrder": 1
+ },
+ {
+  "type": 8,
+  "typeName": "room",
+  "name": "Room",
+  "parentId": 13,
+  "id": 14,
+  "filename": "roomdevice.c4i",
+  "proxy": "roomdevice",
+  "proxyOrder": 1,
+  "siteId": 11,
+  "siteName": "Home",
+  "buildingId": 12,
+  "buildingName": "House",
+  "floorId": 13,
+  "floorName": "Main",
+  "roomId": 14,
+  "roomName": "Room",
+  "roomHidden": false,
+  "tempHidden": true,
+  "largeImage": "locations_lg\\room.gif",
+  "smallImage": "locations_sm\\room.gif",
+  "protocolId": 14,
+  "protocolName": "Room",
+  "protocolFilename": "roomdevice.c4i",
+  "capabilities": "",
+  "roomOrder": 1,
+  "allControlBindingsHidden": 0,
+  "URIs": {
+   "variables": "/api/v1/items/14/variables",
+   "bindings": "/api/v1/items/14/bindings",
+   "commands": "/api/v1/items/14/commands"
+  }
+ },
+ {
+  "type": 6,
+  "typeName": "device",
+  "name": "Control4 EA-3",
+  "parentId": 14,
+  "id": 15,
+  "proxy": "controller",
+  "proxyMeta": [
+   {
+    "name": "EA-3",
+    "proxybindingid": 5001,
+    "smallSource": "composer",
+    "smallImage": "devices_sm/control4_ea3_sm.png",
+    "largeSource": "composer",
+    "largeImage": "devices_lg/control4_ea3_lg.png",
+    "proxy": "controller"
+   },
+   {
+    "proxybindingid": 5002,
+    "proxy": "uidevice"
+   }
+  ],
+  "categories": [
+   "controllers",
+   "user_interface"
+  ],
+  "siteId": 11,
+  "siteName": "Home",
+  "buildingId": 12,
+  "buildingName": "House",
+  "floorId": 13,
+  "floorName": "Main",
+  "roomId": 14,
+  "roomName": "Room",
+  "filename": "control4_ea3.c4i",
+  "protocolId": 15,
+  "control": "control4_ea3",
+  "version": 34,
+  "modified": null,
+  "model": "C4-EA3",
+  "manufacturer": "Control4",
+  "allControlBindingsHidden": 0,
+  "isOnline": true,
+  "URIs": {
+   "network": "/api/v1/items/15/network",
+   "bindings": "/api/v1/items/15/bindings",
+   "commands": "/api/v1/items/15/commands",
+   "zigbee": "/api/v1/items/15/zigbee"
+  }
+ },
+ {
+  "type": 7,
+  "typeName": "device",
+  "name": "EA-3",
+  "parentId": 15,
+  "id": 16,
+  "filename": "controller.c4i",
+  "proxy": "controller",
+  "proxyOrder": 1,
+  "proxyMeta": [
+   {
+    "name": "EA-3",
+    "proxybindingid": 5001,
+    "smallSource": "composer",
+    "smallImage": "devices_sm/control4_ea3_sm.png",
+    "largeSource": "composer",
+    "largeImage": "devices_lg/control4_ea3_lg.png",
+    "proxy": "controller"
+   }
+  ],
+  "categories": [
+   "controllers"
+  ],
+  "siteId": 11,
+  "siteName": "Home",
+  "buildingId": 12,
+  "buildingName": "House",
+  "floorId": 13,
+  "floorName": "Main",
+  "roomId": 14,
+  "roomName": "Room",
+  "largeImage": "devices_lg/cmp_ico32_ea0.gif",
+  "smallImage": "devices_sm/cmp_ico16_ea0.gif",
+  "protocolId": 15,
+  "protocolName": "Control4 EA-3",
+  "protocolFilename": "control4_ea3.c4i",
+  "capabilities": {
+   "audio_sense_count": 1,
+   "audio_sense_names": "Analog Audio 1",
+   "auto_bind_onscreen_selection": {
+    "proxybindingid": 5001,
+    "$t": true
+   },
+   "has_adaptive_brightness": false,
+   "has_backlight": false,
+   "has_discrete_volume_control": true,
+   "has_hdmi_passthrough": true,
+   "has_manual_brightness": false,
+   "has_navigator": true,
+   "has_network": false,
+   "has_screensaver_legacy": true,
+   "has_side_buttons": false,
+   "has_suspend": false,
+   "has_ui_device": true,
+   "has_video_input": true,
+   "has_video_output": true,
+   "has_virtual_buttons": false,
+   "has_wifi": false,
+   "home_layout_mode": "grid",
+   "max_recommended_scan_space": 1000,
+   "num_physical_buttons": 0,
+   "supports_distributed_audio": true,
+   "supports_zwave": true,
+   "throttled_vol_ms_rate": 250
+  },
+  "control": "controller",
+  "version": 3,
+  "created": "05/20/2015",
+  "modified": "7/29/2015",
+  "model": "",
+  "manufacturer": "",
+  "protocolControl": "control4_ea3",
+  "deviceOrder": 1,
+  "allControlBindingsHidden": 0,
+  "controller_disabled": false,
+  "URIs": {
+   "network": "/api/v1/items/16/network",
+   "bindings": "/api/v1/items/16/bindings",
+   "commands": "/api/v1/items/16/commands",
+   "zigbee": "/api/v1/items/16/zigbee"
+  }
+ },
+ {
+  "type": 7,
+  "typeName": "device",
+  "name": "UIDevice",
+  "parentId": 15,
+  "id": 17,
+  "filename": "uidevice.c4i",
+  "proxy": "uidevice",
+  "proxyOrder": 2,
+  "proxyMeta": [
+   {
+    "name": "EA-3",
+    "proxybindingid": 5001,
+    "smallSource": "composer",
+    "smallImage": "devices_sm/control4_ea3_sm.png",
+    "largeSource": "composer",
+    "largeImage": "devices_lg/control4_ea3_lg.png",
+    "proxy": "controller"
+   }
+  ],
+  "categories": [
+   "user_interface"
+  ],
+  "siteId": 11,
+  "siteName": "Home",
+  "buildingId": 12,
+  "buildingName": "House",
+  "floorId": 13,
+  "floorName": "Main",
+  "roomId": 14,
+  "roomName": "Room",
+  "largeImage": "devices_lg/control4_touchpad_32.gif",
+  "smallImage": "devices_sm/control4_touchpad_16.gif",
+  "protocolId": 15,
+  "protocolName": "Control4 EA-3",
+  "protocolFilename": "control4_ea3.c4i",
+  "capabilities": {
+   "audio_sense_count": 1,
+   "audio_sense_names": "Analog Audio 1",
+   "has_adaptive_brightness": false,
+   "has_backlight": false,
+   "has_discrete_volume_control": true,
+   "has_hdmi_passthrough": true,
+   "has_manual_brightness": false,
+   "has_navigator": true,
+   "has_network": false,
+   "has_screensaver_legacy": true,
+   "has_side_buttons": false,
+   "has_suspend": false,
+   "has_ui_device": true,
+   "has_video_input": true,
+   "has_video_output": true,
+   "has_virtual_buttons": false,
+   "has_wifi": false,
+   "home_layout_mode": "grid",
+   "max_recommended_scan_space": 1000,
+   "num_physical_buttons": 0,
+   "supports_distributed_audio": true,
+   "supports_zwave": true,
+   "throttled_vol_ms_rate": 250
+  },
+  "control": "uidevice",
+  "version": 1,
+  "created": "02/19/2014",
+  "modified": "03/21/2014",
+  "model": "",
+  "manufacturer": "",
+  "protocolControl": "control4_ea3",
+  "deviceOrder": 2,
+  "allControlBindingsHidden": 1,
+  "URIs": {
+   "network": "/api/v1/items/17/network",
+   "bindings": "/api/v1/items/17/bindings",
+   "commands": "/api/v1/items/17/commands"
+  }
+ },
+ {
+  "type": 6,
+  "typeName": "device",
+  "name": "Manage Music",
+  "parentId": 14,
+  "id": 18,
+  "proxy": "media_service",
+  "proxyMeta": [
+   {
+    "name": "Manage Music",
+    "proxybindingid": 5001,
+    "smallSource": "c4z",
+    "smallImage": "icons/device_sm.png",
+    "largeSource": "c4z",
+    "largeImage": "icons/device_lg.png",
+    "proxy": "media_service"
+   }
+  ],
+  "categories": [
+   "audio_video"
+  ],
+  "siteId": 11,
+  "siteName": "Home",
+  "buildingId": 12,
+  "buildingName": "House",
+  "floorId": 13,
+  "floorName": "Main",
+  "roomId": 14,
+  "roomName": "Room",
+  "filename": "AddMusic.c4z",
+  "protocolId": 18,
+  "control": "lua_gen",
+  "version": 107,
+  "created": "12/15/2017 11:00",
+  "modified": "03/09/2026 13:00",
+  "model": "Manage Music",
+  "manufacturer": "Control4",
+  "allControlBindingsHidden": 1,
+  "URIs": {
+   "commands": "/api/v1/items/18/commands"
+  }
+ },
+ {
+  "type": 7,
+  "typeName": "device",
+  "name": "Manage Music",
+  "parentId": 18,
+  "id": 19,
+  "filename": "media_service.c4i",
+  "proxy": "media_service",
+  "proxyOrder": 1,
+  "proxyMeta": [
+   {
+    "name": "Manage Music",
+    "proxybindingid": 5001,
+    "smallSource": "c4z",
+    "smallImage": "icons/device_sm.png",
+    "largeSource": "c4z",
+    "largeImage": "icons/device_lg.png",
+    "proxy": "media_service"
+   }
+  ],
+  "categories": [
+   "audio_video"
+  ],
+  "siteId": 11,
+  "siteName": "Home",
+  "buildingId": 12,
+  "buildingName": "House",
+  "floorId": 13,
+  "floorName": "Main",
+  "roomId": 14,
+  "roomName": "Room",
+  "largeImage": "devices_lg/ico_32_mediaservices.png",
+  "smallImage": "devices_sm/ico_16_mediaservices.png",
+  "protocolId": 18,
+  "protocolName": "Manage Music",
+  "protocolFilename": "AddMusic.c4z",
+  "capabilities": {
+   "HasGeneratesStartMediaDialog": true,
+   "can_scan_media": false,
+   "can_select": false,
+   "digital_audio_support": true,
+   "dont_auto_select_path_on_media": true,
+   "hide_in_list_nav": true,
+   "hide_in_media": true,
+   "navigator_display_option": {
+    "proxybindingid": 5001,
+    "type": "xml",
+    "translation_url": "controller://driver/AddMusic/translations"
+   },
+   "ui_selects_device": false
+  },
+  "control": "media_service",
+  "version": 3,
+  "created": "7/30/2012 12:30 PM",
+  "modified": "3/12/2013 10:45 PM",
+  "model": "",
+  "manufacturer": "",
+  "protocolControl": "lua_gen",
+  "deviceOrder": 4,
+  "allControlBindingsHidden": 0,
+  "URIs": {
+   "bindings": "/api/v1/items/19/bindings",
+   "commands": "/api/v1/items/19/commands"
+  }
+ },
+ {
+  "type": 6,
+  "typeName": "device",
+  "name": "TuneIn",
+  "parentId": 14,
+  "id": 20,
+  "proxy": "media_service",
+  "proxyMeta": [
+   {
+    "name": "TuneIn",
+    "proxybindingid": 5001,
+    "smallSource": "c4z",
+    "smallImage": "composer/ico_16_tunein.gif",
+    "largeSource": "c4z",
+    "largeImage": "composer/ico_32_tunein.gif",
+    "proxy": "media_service"
+   }
+  ],
+  "categories": [
+   "audio_video"
+  ],
+  "siteId": 11,
+  "siteName": "Home",
+  "buildingId": 12,
+  "buildingName": "House",
+  "floorId": 13,
+  "floorName": "Main",
+  "roomId": 14,
+  "roomName": "Room",
+  "filename": "TuneIn.c4z",
+  "protocolId": 20,
+  "control": "lua_gen",
+  "version": 129,
+  "created": "09/11/2012 12:00 AM",
+  "modified": "2021-09-17 16:30",
+  "model": "TuneIn",
+  "manufacturer": "Control4",
+  "allControlBindingsHidden": 1,
+  "URIs": {
+   "commands": "/api/v1/items/20/commands"
+  }
+ },
+ {
+  "type": 7,
+  "typeName": "device",
+  "name": "TuneIn",
+  "parentId": 20,
+  "id": 21,
+  "filename": "media_service.c4i",
+  "proxy": "media_service",
+  "proxyOrder": 1,
+  "proxyMeta": [
+   {
+    "name": "TuneIn",
+    "proxybindingid": 5001,
+    "smallSource": "c4z",
+    "smallImage": "composer/ico_16_tunein.gif",
+    "largeSource": "c4z",
+    "largeImage": "composer/ico_32_tunein.gif",
+    "proxy": "media_service"
+   }
+  ],
+  "categories": [
+   "audio_video"
+  ],
+  "siteId": 11,
+  "siteName": "Home",
+  "buildingId": 12,
+  "buildingName": "House",
+  "floorId": 13,
+  "floorName": "Main",
+  "roomId": 14,
+  "roomName": "Room",
+  "largeImage": "devices_lg/ico_32_mediaservices.png",
+  "smallImage": "devices_sm/ico_16_mediaservices.png",
+  "protocolId": 20,
+  "protocolName": "TuneIn",
+  "protocolFilename": "TuneIn.c4z",
+  "capabilities": {
+   "can_select": false,
+   "digital_audio_support": true,
+   "dont_auto_select_path_on_media": true,
+   "hide_in_media": true,
+   "media_type": 2,
+   "navigator_display_option": {
+    "proxybindingid": 5001,
+    "type": "xml",
+    "translation_url": "controller://driver/TuneIn/translations"
+   }
+  },
+  "control": "media_service",
+  "version": 3,
+  "created": "7/30/2012 12:30 PM",
+  "modified": "3/12/2013 10:45 PM",
+  "model": "",
+  "manufacturer": "",
+  "protocolControl": "lua_gen",
+  "deviceOrder": 5,
+  "allControlBindingsHidden": 0,
+  "URIs": {
+   "bindings": "/api/v1/items/21/bindings",
+   "commands": "/api/v1/items/21/commands"
+  }
+ },
+ {
+  "type": 6,
+  "typeName": "device",
+  "name": "My Music",
+  "parentId": 14,
+  "id": 22,
+  "proxy": "media_service",
+  "proxyMeta": [
+   {
+    "name": "My Music",
+    "proxybindingid": 5001,
+    "smallSource": "c4z",
+    "smallImage": "composer/ico_16_mymusic.gif",
+    "largeSource": "c4z",
+    "largeImage": "composer/ico_32_mymusic.gif",
+    "proxy": "media_service"
+   }
+  ],
+  "categories": [
+   "audio_video"
+  ],
+  "siteId": 11,
+  "siteName": "Home",
+  "buildingId": 12,
+  "buildingName": "House",
+  "floorId": 13,
+  "floorName": "Main",
+  "roomId": 14,
+  "roomName": "Room",
+  "filename": "MyMusic.c4z",
+  "protocolId": 22,
+  "control": "lua_gen",
+  "version": 289,
+  "created": "2014-09-03 13:43",
+  "modified": "2021-09-17 16:30",
+  "model": "My Music",
+  "manufacturer": "Control4",
+  "allControlBindingsHidden": 1,
+  "URIs": {
+   "commands": "/api/v1/items/22/commands"
+  }
+ },
+ {
+  "type": 7,
+  "typeName": "device",
+  "name": "My Music",
+  "parentId": 22,
+  "id": 23,
+  "filename": "media_service.c4i",
+  "proxy": "media_service",
+  "proxyOrder": 1,
+  "proxyMeta": [
+   {
+    "name": "My Music",
+    "proxybindingid": 5001,
+    "smallSource": "c4z",
+    "smallImage": "composer/ico_16_mymusic.gif",
+    "largeSource": "c4z",
+    "largeImage": "composer/ico_32_mymusic.gif",
+    "proxy": "media_service"
+   }
+  ],
+  "categories": [
+   "audio_video"
+  ],
+  "siteId": 11,
+  "siteName": "Home",
+  "buildingId": 12,
+  "buildingName": "House",
+  "floorId": 13,
+  "floorName": "Main",
+  "roomId": 14,
+  "roomName": "Room",
+  "largeImage": "devices_lg/ico_32_mediaservices.png",
+  "smallImage": "devices_sm/ico_16_mediaservices.png",
+  "protocolId": 22,
+  "protocolName": "My Music",
+  "protocolFilename": "MyMusic.c4z",
+  "capabilities": {
+   "can_select": false,
+   "digital_audio_support": true,
+   "hide_in_media": true,
+   "list_nav_page_size": 1000,
+   "media_type": 2,
+   "navigator_display_option": {
+    "proxybindingid": 5001,
+    "type": "xml",
+    "translation_url": "controller://driver/MyMusic/translations"
+   }
+  },
+  "control": "media_service",
+  "version": 3,
+  "created": "7/30/2012 12:30 PM",
+  "modified": "3/12/2013 10:45 PM",
+  "model": "",
+  "manufacturer": "",
+  "protocolControl": "lua_gen",
+  "deviceOrder": 6,
+  "allControlBindingsHidden": 0,
+  "URIs": {
+   "bindings": "/api/v1/items/23/bindings",
+   "commands": "/api/v1/items/23/commands"
+  }
+ },
+ {
+  "type": 6,
+  "typeName": "device",
+  "name": "My Movies",
+  "parentId": 14,
+  "id": 24,
+  "proxy": "media_service",
+  "proxyMeta": [
+   {
+    "name": "My Movies",
+    "proxybindingid": 5001,
+    "smallSource": "c4z",
+    "smallImage": "composer/ico_16_mymovies.gif",
+    "largeSource": "c4z",
+    "largeImage": "composer/ico_32_mymovies.gif",
+    "proxy": "media_service"
+   }
+  ],
+  "categories": [
+   "audio_video"
+  ],
+  "siteId": 11,
+  "siteName": "Home",
+  "buildingId": 12,
+  "buildingName": "House",
+  "floorId": 13,
+  "floorName": "Main",
+  "roomId": 14,
+  "roomName": "Room",
+  "filename": "MyMovies.c4z",
+  "protocolId": 24,
+  "control": "lua_gen",
+  "version": 107,
+  "created": "2014-09-03 13:43",
+  "modified": "2021-09-17 16:30",
+  "model": "My Movies",
+  "manufacturer": "Control4",
+  "allControlBindingsHidden": 1,
+  "URIs": {
+   "commands": "/api/v1/items/24/commands"
+  }
+ },
+ {
+  "type": 7,
+  "typeName": "device",
+  "name": "My Movies",
+  "parentId": 24,
+  "id": 25,
+  "filename": "media_service.c4i",
+  "proxy": "media_service",
+  "proxyOrder": 1,
+  "proxyMeta": [
+   {
+    "name": "My Movies",
+    "proxybindingid": 5001,
+    "smallSource": "c4z",
+    "smallImage": "composer/ico_16_mymovies.gif",
+    "largeSource": "c4z",
+    "largeImage": "composer/ico_32_mymovies.gif",
+    "proxy": "media_service"
+   }
+  ],
+  "categories": [
+   "audio_video"
+  ],
+  "siteId": 11,
+  "siteName": "Home",
+  "buildingId": 12,
+  "buildingName": "House",
+  "floorId": 13,
+  "floorName": "Main",
+  "roomId": 14,
+  "roomName": "Room",
+  "largeImage": "devices_lg/ico_32_mediaservices.png",
+  "smallImage": "devices_sm/ico_16_mediaservices.png",
+  "protocolId": 24,
+  "protocolName": "My Movies",
+  "protocolFilename": "MyMovies.c4z",
+  "capabilities": {
+   "hide_in_media": true,
+   "list_nav_page_size": 1000,
+   "navigator_display_option": {
+    "proxybindingid": 5001,
+    "type": "xml",
+    "translation_url": "controller://driver/MyMovies/translations"
+   }
+  },
+  "control": "media_service",
+  "version": 3,
+  "created": "7/30/2012 12:30 PM",
+  "modified": "3/12/2013 10:45 PM",
+  "model": "",
+  "manufacturer": "",
+  "protocolControl": "lua_gen",
+  "deviceOrder": 7,
+  "allControlBindingsHidden": 1,
+  "URIs": {
+   "commands": "/api/v1/items/25/commands"
+  }
+ },
+ {
+  "type": 6,
+  "typeName": "device",
+  "name": "Stations",
+  "parentId": 14,
+  "id": 26,
+  "proxy": "media_service",
+  "proxyMeta": [
+   {
+    "name": "Stations",
+    "proxybindingid": 5001,
+    "smallSource": "c4z",
+    "smallImage": "composer/ico_16_stations.gif",
+    "largeSource": "c4z",
+    "largeImage": "composer/ico_32_stations.gif",
+    "proxy": "media_service"
+   }
+  ],
+  "categories": [
+   "audio_video"
+  ],
+  "siteId": 11,
+  "siteName": "Home",
+  "buildingId": 12,
+  "buildingName": "House",
+  "floorId": 13,
+  "floorName": "Main",
+  "roomId": 14,
+  "roomName": "Room",
+  "filename": "Stations.c4z",
+  "protocolId": 26,
+  "control": "lua_gen",
+  "version": 26,
+  "created": "2015-06-15 12:00",
+  "modified": "2021-09-17 16:30",
+  "model": "Stations",
+  "manufacturer": "Control4",
+  "allControlBindingsHidden": 1,
+  "URIs": {
+   "commands": "/api/v1/items/26/commands"
+  }
+ },
+ {
+  "type": 7,
+  "typeName": "device",
+  "name": "Stations",
+  "parentId": 26,
+  "id": 27,
+  "filename": "media_service.c4i",
+  "proxy": "media_service",
+  "proxyOrder": 1,
+  "proxyMeta": [
+   {
+    "name": "Stations",
+    "proxybindingid": 5001,
+    "smallSource": "c4z",
+    "smallImage": "composer/ico_16_stations.gif",
+    "largeSource": "c4z",
+    "largeImage": "composer/ico_32_stations.gif",
+    "proxy": "media_service"
+   }
+  ],
+  "categories": [
+   "audio_video"
+  ],
+  "siteId": 11,
+  "siteName": "Home",
+  "buildingId": 12,
+  "buildingName": "House",
+  "floorId": 13,
+  "floorName": "Main",
+  "roomId": 14,
+  "roomName": "Room",
+  "largeImage": "devices_lg/ico_32_mediaservices.png",
+  "smallImage": "devices_sm/ico_16_mediaservices.png",
+  "protocolId": 26,
+  "protocolName": "Stations",
+  "protocolFilename": "Stations.c4z",
+  "capabilities": {
+   "hide_in_media": true,
+   "navigator_display_option": {
+    "proxybindingid": 5001,
+    "type": "xml",
+    "translation_url": "controller://driver/Stations/translations"
+   }
+  },
+  "control": "media_service",
+  "version": 3,
+  "created": "7/30/2012 12:30 PM",
+  "modified": "3/12/2013 10:45 PM",
+  "model": "",
+  "manufacturer": "",
+  "protocolControl": "lua_gen",
+  "deviceOrder": 8,
+  "allControlBindingsHidden": 1,
+  "URIs": {
+   "commands": "/api/v1/items/27/commands"
+  }
+ },
+ {
+  "type": 6,
+  "typeName": "device",
+  "name": "Channels",
+  "parentId": 14,
+  "id": 28,
+  "proxy": "media_service",
+  "proxyMeta": [
+   {
+    "name": "Channels",
+    "proxybindingid": 5001,
+    "smallSource": "c4z",
+    "smallImage": "composer/ico_16_channels.gif",
+    "largeSource": "c4z",
+    "largeImage": "composer/ico_32_channels.gif",
+    "proxy": "media_service"
+   }
+  ],
+  "categories": [
+   "audio_video"
+  ],
+  "siteId": 11,
+  "siteName": "Home",
+  "buildingId": 12,
+  "buildingName": "House",
+  "floorId": 13,
+  "floorName": "Main",
+  "roomId": 14,
+  "roomName": "Room",
+  "filename": "Channels.c4z",
+  "protocolId": 28,
+  "control": "lua_gen",
+  "version": 26,
+  "created": "2015-06-15 12:00",
+  "modified": "2021-09-17 16:30",
+  "model": "Channels",
+  "manufacturer": "Control4",
+  "allControlBindingsHidden": 1,
+  "URIs": {
+   "commands": "/api/v1/items/28/commands"
+  }
+ },
+ {
+  "type": 7,
+  "typeName": "device",
+  "name": "Channels",
+  "parentId": 28,
+  "id": 29,
+  "filename": "media_service.c4i",
+  "proxy": "media_service",
+  "proxyOrder": 1,
+  "proxyMeta": [
+   {
+    "name": "Channels",
+    "proxybindingid": 5001,
+    "smallSource": "c4z",
+    "smallImage": "composer/ico_16_channels.gif",
+    "largeSource": "c4z",
+    "largeImage": "composer/ico_32_channels.gif",
+    "proxy": "media_service"
+   }
+  ],
+  "categories": [
+   "audio_video"
+  ],
+  "siteId": 11,
+  "siteName": "Home",
+  "buildingId": 12,
+  "buildingName": "House",
+  "floorId": 13,
+  "floorName": "Main",
+  "roomId": 14,
+  "roomName": "Room",
+  "largeImage": "devices_lg/ico_32_mediaservices.png",
+  "smallImage": "devices_sm/ico_16_mediaservices.png",
+  "protocolId": 28,
+  "protocolName": "Channels",
+  "protocolFilename": "Channels.c4z",
+  "capabilities": {
+   "hide_in_media": true,
+   "navigator_display_option": {
+    "proxybindingid": 5001,
+    "type": "xml",
+    "translation_url": "controller://driver/Channels/translations"
+   }
+  },
+  "control": "media_service",
+  "version": 3,
+  "created": "7/30/2012 12:30 PM",
+  "modified": "3/12/2013 10:45 PM",
+  "model": "",
+  "manufacturer": "",
+  "protocolControl": "lua_gen",
+  "deviceOrder": 9,
+  "allControlBindingsHidden": 1,
+  "URIs": {
+   "commands": "/api/v1/items/29/commands"
+  }
+ },
+ {
+  "type": 7,
+  "typeName": "device",
+  "name": "Remote Hub",
+  "parentId": 14,
+  "id": 30,
+  "filename": "control4_remote_hub.c4z",
+  "proxy": "control4_remote_hub",
+  "proxyOrder": 1,
+  "proxyMeta": [
+   {
+    "name": "control4_remote_hub",
+    "smallImage": "device_sm.png",
+    "smallSource": "c4z",
+    "largeImage": "device_lg.png",
+    "largeSource": "c4z"
+   }
+  ],
+  "categories": [],
+  "siteId": 11,
+  "siteName": "Home",
+  "buildingId": 12,
+  "buildingName": "House",
+  "floorId": 13,
+  "floorName": "Main",
+  "roomId": 14,
+  "roomName": "Room",
+  "largeImage": {
+   "image_source": "c4z",
+   "$t": "device_lg.png"
+  },
+  "smallImage": {
+   "image_source": "c4z",
+   "$t": "device_sm.png"
+  },
+  "protocolId": 30,
+  "protocolName": "Remote Hub",
+  "protocolFilename": "control4_remote_hub.c4z",
+  "capabilities": {},
+  "control": "lua_gen",
+  "version": 2120391412,
+  "created": "29/05/2019 12:34 PM",
+  "modified": "03/14/2025 12:16 PM",
+  "model": "Remote Hub",
+  "manufacturer": "Control4",
+  "protocolControl": "lua_gen",
+  "deviceOrder": 11,
+  "URIs": {
+   "properties": "/api/v1/items/30/properties",
+   "bindings": "/api/v1/items/30/bindings",
+   "commands": "/api/v1/items/30/commands"
+  }
+ },
+ {
+  "type": 8,
+  "typeName": "room",
+  "name": "Bathroom",
+  "parentId": 13,
+  "id": 31,
+  "filename": "roomdevice.c4i",
+  "proxy": "roomdevice",
+  "proxyOrder": 1,
+  "siteId": 11,
+  "siteName": "Home",
+  "buildingId": 12,
+  "buildingName": "House",
+  "floorId": 13,
+  "floorName": "Main",
+  "roomId": 31,
+  "roomName": "Bathroom",
+  "roomHidden": false,
+  "tempHidden": true,
+  "largeImage": "locations_lg\\bathroom.gif",
+  "smallImage": "locations_sm\\bathroom.gif",
+  "protocolId": 31,
+  "protocolName": "Bathroom",
+  "protocolFilename": "roomdevice.c4i",
+  "capabilities": "",
+  "roomOrder": 2,
+  "allControlBindingsHidden": 0,
+  "URIs": {
+   "variables": "/api/v1/items/31/variables",
+   "bindings": "/api/v1/items/31/bindings",
+   "commands": "/api/v1/items/31/commands"
+  }
+ },
+ {
+  "type": 7,
+  "typeName": "device",
+  "name": "Cable TV",
+  "parentId": 14,
+  "id": 36,
+  "filename": "rf_cable.c4i",
+  "proxy": "rf_cable",
+  "proxyOrder": 1,
+  "proxyMeta": [
+   {
+    "name": "rf_cable",
+    "smallImage": "devices_sm/Cable.gif",
+    "smallSource": "composer",
+    "largeImage": "devices_lg/Cable.gif",
+    "largeSource": "composer"
+   }
+  ],
+  "categories": [
+   "audio_video"
+  ],
+  "siteId": 11,
+  "siteName": "Home",
+  "buildingId": 12,
+  "buildingName": "House",
+  "floorId": 13,
+  "floorName": "Main",
+  "roomId": 14,
+  "roomName": "Room",
+  "largeImage": "devices_lg/Cable.gif",
+  "smallImage": "devices_sm/Cable.gif",
+  "protocolId": 36,
+  "protocolName": "Cable TV",
+  "protocolFilename": "rf_cable.c4i",
+  "capabilities": {
+   "broadcast_search_type": "CABLE",
+   "media_type": 8
+  },
+  "control": "rf_network",
+  "version": 2,
+  "created": "1/20/2005 2:22:54 PM",
+  "modified": "11/02/2005 12:30 PM",
+  "model": "Network",
+  "manufacturer": "Cable",
+  "protocolControl": "rf_network",
+  "deviceOrder": 10,
+  "allControlBindingsHidden": 0,
+  "URIs": {
+   "bindings": "/api/v1/items/36/bindings",
+   "commands": "/api/v1/items/36/commands"
+  }
+ },
+ {
+  "type": 6,
+  "typeName": "device",
+  "name": "Hisense 55K610GWN IR",
+  "parentId": 31,
+  "id": 49,
+  "proxy": "tv",
+  "proxyMeta": [
+   {
+    "proxybindingid": 5001,
+    "smallSource": "composer",
+    "smallImage": "devices_sm/tv.gif",
+    "largeSource": "composer",
+    "largeImage": "devices_lg/tv.gif",
+    "proxy": "tv"
+   }
+  ],
+  "categories": [
+   "audio_video"
+  ],
+  "siteId": 11,
+  "siteName": "Home",
+  "buildingId": 12,
+  "buildingName": "House",
+  "floorId": 13,
+  "floorName": "Main",
+  "roomId": 31,
+  "roomName": "Bathroom",
+  "filename": "tv_Hisense_55K610GWN.c4i",
+  "protocolId": 49,
+  "control": "av_gen",
+  "version": 10,
+  "created": "9/2/2024 2:02:15 PM",
+  "modified": "5/15/2026 8:08:17 PM",
+  "model": "55K610GWN",
+  "manufacturer": "Hisense",
+  "URIs": {
+   "bindings": "/api/v1/items/49/bindings",
+   "commands": "/api/v1/items/49/commands"
+  }
+ },
+ {
+  "type": 7,
+  "typeName": "device",
+  "name": "Television",
+  "parentId": 49,
+  "id": 50,
+  "filename": "tv.c4i",
+  "proxy": "tv",
+  "proxyOrder": 1,
+  "proxyMeta": [
+   {
+    "proxybindingid": 5001,
+    "smallSource": "composer",
+    "smallImage": "devices_sm/tv.gif",
+    "largeSource": "composer",
+    "largeImage": "devices_lg/tv.gif",
+    "proxy": "tv"
+   }
+  ],
+  "categories": [
+   "audio_video"
+  ],
+  "siteId": 11,
+  "siteName": "Home",
+  "buildingId": 12,
+  "buildingName": "House",
+  "floorId": 13,
+  "floorName": "Main",
+  "roomId": 31,
+  "roomName": "Bathroom",
+  "largeImage": "devices_lg/tv.gif",
+  "smallImage": "devices_sm/tv.gif",
+  "protocolId": 49,
+  "protocolName": "Hisense 55K610GWN IR",
+  "protocolFilename": "tv_Hisense_55K610GWN.c4i",
+  "capabilities": {
+   "audio_consumer_count": 3,
+   "audio_provider_count": 1,
+   "has_audio": true,
+   "has_channel_up_down": true,
+   "has_discrete_channel_select": true,
+   "has_toad_input_select": true,
+   "has_toggle_mute_control": true,
+   "has_up_down_volume_control": true,
+   "requires_channel_after_input": true,
+   "video_consumer_count": 8,
+   "video_provider_count": 0
+  },
+  "events": [
+   {
+    "id": 1,
+    "description": "when NAME turns on"
+   },
+   {
+    "id": 2,
+    "description": "when NAME turns off"
+   },
+   {
+    "id": 7,
+    "description": "when NAME channel changes"
+   },
+   {
+    "id": 8,
+    "description": "when NAME input changes"
+   },
+   {
+    "id": 5,
+    "description": "when NAME volume changes"
+   },
+   {
+    "id": 9,
+    "description": "when NAME bass changes"
+   },
+   {
+    "id": 10,
+    "description": "when NAME treble changes"
+   },
+   {
+    "id": 11,
+    "description": "when NAME balance changes"
+   },
+   {
+    "id": 12,
+    "description": "when NAME loudness changes"
+   },
+   {
+    "id": 100,
+    "description": "when NAME audio parameter changes"
+   },
+   {
+    "id": 13,
+    "description": "when NAME mute changes"
+   }
+  ],
+  "commands": {
+   "command": [
+    {
+     "id": 0,
+     "description": "Turn on the NAME"
+    },
+    {
+     "id": 1,
+     "description": "Turn off the NAME"
+    },
+    {
+     "id": 2,
+     "description": "Push the Menu on the NAME"
+    },
+    {
+     "id": 3,
+     "description": "Push the Up on the NAME"
+    },
+    {
+     "id": 4,
+     "description": "Push the Down on the NAME"
+    },
+    {
+     "id": 5,
+     "description": "Push the Left on the NAME"
+    },
+    {
+     "id": 6,
+     "description": "Push the Right on the NAME"
+    },
+    {
+     "id": 7,
+     "description": "Push the enter on the NAME"
+    },
+    {
+     "id": 8,
+     "description": "Set volume to INTEGER on the NAME"
+    },
+    {
+     "id": 9,
+     "description": "Start the volume up on the NAME"
+    },
+    {
+     "id": 10,
+     "description": "Stop the volume up on the NAME"
+    },
+    {
+     "id": 11,
+     "description": "Start the volume down on the NAME"
+    },
+    {
+     "id": 12,
+     "description": "Stop the volume down on the NAME"
+    },
+    {
+     "id": 13,
+     "description": "Pulse the volume up on the NAME"
+    },
+    {
+     "id": 14,
+     "description": "Pulse the volume down on the NAME"
+    },
+    {
+     "id": 15,
+     "description": "Set input to INTEGER on the NAME"
+    },
+    {
+     "id": 16,
+     "description": "Pulse the input on the NAME"
+    },
+    {
+     "id": 17,
+     "description": "Turn mute on the NAME"
+    },
+    {
+     "id": 18,
+     "description": "Turn mute off the NAME"
+    },
+    {
+     "id": 19,
+     "description": "Turn mute toggle the NAME"
+    },
+    {
+     "id": 20,
+     "description": "Set channel to INTEGER on the NAME"
+    },
+    {
+     "id": 21,
+     "description": "Start the channel up on the NAME"
+    },
+    {
+     "id": 22,
+     "description": "Stop the channel up on the NAME"
+    },
+    {
+     "id": 23,
+     "description": "Start the channel down on the NAME"
+    },
+    {
+     "id": 24,
+     "description": "Stop the channel down on the NAME"
+    },
+    {
+     "id": 25,
+     "description": "Pulse the channel up on the NAME"
+    },
+    {
+     "id": 26,
+     "description": "Pulse the channel down on the NAME"
+    },
+    {
+     "id": 27,
+     "description": "Push the TvVideo on the NAME"
+    },
+    {
+     "id": 28,
+     "description": "Push the Info on the NAME"
+    },
+    {
+     "id": 29,
+     "description": "Push the Cancel on the NAME"
+    },
+    {
+     "id": 30,
+     "description": "Push the Recall on the NAME"
+    },
+    {
+     "id": 31,
+     "description": "Enter '0' on the NAME"
+    },
+    {
+     "id": 32,
+     "description": "Enter '1' on the NAME"
+    },
+    {
+     "id": 33,
+     "description": "Enter '2' on the NAME"
+    },
+    {
+     "id": 34,
+     "description": "Enter '3' on the NAME"
+    },
+    {
+     "id": 35,
+     "description": "Enter '4' on the NAME"
+    },
+    {
+     "id": 36,
+     "description": "Enter '5' on the NAME"
+    },
+    {
+     "id": 37,
+     "description": "Enter '6' on the NAME"
+    },
+    {
+     "id": 38,
+     "description": "Enter '7' on the NAME"
+    },
+    {
+     "id": 39,
+     "description": "Enter '8' on the NAME"
+    },
+    {
+     "id": 40,
+     "description": "Enter '9' on the NAME"
+    },
+    {
+     "id": 41,
+     "description": "Set bass to INTEGER on the NAME"
+    },
+    {
+     "id": 42,
+     "description": "Start the bass up on the NAME"
+    },
+    {
+     "id": 43,
+     "description": "Stop the bass up on the NAME"
+    },
+    {
+     "id": 44,
+     "description": "Pulse the bass up on the NAME"
+    },
+    {
+     "id": 45,
+     "description": "Start the bass down on the NAME"
+    },
+    {
+     "id": 46,
+     "description": "Stop the bass down on the NAME"
+    },
+    {
+     "id": 47,
+     "description": "Pulse the bass down on the NAME"
+    },
+    {
+     "id": 48,
+     "description": "Set treble to INTEGER on the NAME"
+    },
+    {
+     "id": 49,
+     "description": "Start the treble up on the NAME"
+    },
+    {
+     "id": 50,
+     "description": "Stop the treble up on the NAME"
+    },
+    {
+     "id": 51,
+     "description": "Pulse the treble up on the NAME"
+    },
+    {
+     "id": 52,
+     "description": "Start the treble down on the NAME"
+    },
+    {
+     "id": 53,
+     "description": "Stop the treble down on the NAME"
+    },
+    {
+     "id": 54,
+     "description": "Pulse the bass down on the NAME"
+    },
+    {
+     "id": 55,
+     "description": "Set balance to INTEGER on the NAME"
+    },
+    {
+     "id": 56,
+     "description": "Start the balance up on the NAME"
+    },
+    {
+     "id": 57,
+     "description": "Stop the balance up on the NAME"
+    },
+    {
+     "id": 58,
+     "description": "Pulse the balance up on the NAME"
+    },
+    {
+     "id": 59,
+     "description": "Start the balance down on the NAME"
+    },
+    {
+     "id": 60,
+     "description": "Stop the balance down on the NAME"
+    },
+    {
+     "id": 61,
+     "description": "Pulse the balance down on the NAME"
+    },
+    {
+     "id": 62,
+     "description": "Turn loudness on the NAME"
+    },
+    {
+     "id": 63,
+     "description": "Turn loudness off the NAME"
+    },
+    {
+     "id": 64,
+     "description": "Turn loudness toggle the NAME"
+    },
+    {
+     "id": 65,
+     "description": "Push the Dash on the NAME"
+    },
+    {
+     "id": 66,
+     "description": "Push the Star on the NAME"
+    },
+    {
+     "id": 67,
+     "description": "Push the Pound on the NAME"
+    },
+    {
+     "id": 68,
+     "description": "Start the channel"
+    },
+    {
+     "id": 69,
+     "description": "Stop the channel"
+    },
+    {
+     "id": 70,
+     "description": "Pulse the channel"
+    },
+    {
+     "id": 71,
+     "description": "Start the volume"
+    },
+    {
+     "id": 72,
+     "description": "Stop the volume"
+    },
+    {
+     "id": 73,
+     "description": "Pulse the volume"
+    },
+    {
+     "id": 74,
+     "description": "Start the bass"
+    },
+    {
+     "id": 75,
+     "description": "Stop the bass"
+    },
+    {
+     "id": 76,
+     "description": "Pulse the bass"
+    },
+    {
+     "id": 77,
+     "description": "Start the treble"
+    },
+    {
+     "id": 78,
+     "description": "Stop the treble"
+    },
+    {
+     "id": 79,
+     "description": "Pulse the treble"
+    },
+    {
+     "id": 80,
+     "description": "Start the balance"
+    },
+    {
+     "id": 81,
+     "description": "Stop the balance"
+    },
+    {
+     "id": 82,
+     "description": "Pulse the balance"
+    }
+   ]
+  },
+  "conditionals": {
+   "conditional": [
+    {
+     "id": 0,
+     "description": "the NAME is on"
+    },
+    {
+     "id": 1,
+     "description": "the NAME is off"
+    },
+    {
+     "id": 2,
+     "description": "the last channel is LOGIC INTEGER on the NAME"
+    },
+    {
+     "id": 3,
+     "description": "the current volume level is LOGIC INTEGER on the NAME"
+    },
+    {
+     "id": 4,
+     "description": "the current input is INTEGER on the NAME "
+    },
+    {
+     "id": 5,
+     "description": "the current bass level is LOGIC INTEGER on the NAME"
+    },
+    {
+     "id": 6,
+     "description": "the current treble level is LOGIC INTEGER on the NAME "
+    },
+    {
+     "id": 7,
+     "description": "the current balance is LOGIC INTEGER on the NAME "
+    },
+    {
+     "id": 8,
+     "description": "the current loudness is INTEGER on the NAME "
+    },
+    {
+     "id": 9,
+     "description": "the current mute is INTEGER on the NAME "
+    }
+   ]
+  },
+  "control": "tv",
+  "version": 1,
+  "created": "5/09/2005 12:30 PM",
+  "modified": "5/09/2005 12:30 PM",
+  "model": "",
+  "manufacturer": "",
+  "protocolControl": "av_gen",
+  "deviceOrder": 1,
+  "URIs": {
+   "variables": "/api/v1/items/50/variables",
+   "bindings": "/api/v1/items/50/bindings",
+   "commands": "/api/v1/items/50/commands"
+  }
+ },
+ {
+  "type": 7,
+  "typeName": "device",
+  "name": "System Remote Control SR260",
+  "parentId": 31,
+  "id": 57,
+  "filename": "control4_sr260.c4i",
+  "proxy": "control4_sr260",
+  "proxyOrder": 1,
+  "proxyMeta": [
+   {
+    "name": "control4_sr260",
+    "smallImage": "devices_sm/SR250.gif",
+    "smallSource": "composer",
+    "largeImage": "devices_lg/SR250.gif",
+    "largeSource": "composer"
+   }
+  ],
+  "categories": [
+   "user_interface"
+  ],
+  "siteId": 11,
+  "siteName": "Home",
+  "buildingId": 12,
+  "buildingName": "House",
+  "floorId": 13,
+  "floorName": "Main",
+  "roomId": 31,
+  "roomName": "Bathroom",
+  "largeImage": "devices_lg/SR250.gif",
+  "smallImage": "devices_sm/SR250.gif",
+  "protocolId": 57,
+  "protocolName": "System Remote Control SR260",
+  "protocolFilename": "control4_sr260.c4i",
+  "capabilities": {
+   "button_behavior": "ShowDeviceList",
+   "button_timestamps": true,
+   "can_adjust_recharge_station_enable": true,
+   "can_adjust_wake_on_motion": true,
+   "can_be_found": true,
+   "can_display_volume_bar": true,
+   "can_set_text_color": true,
+   "controls_string": "0e",
+   "display_lines": 6,
+   "has_display": true,
+   "is_display_background_bright": false,
+   "max_list_cache_size": 15,
+   "max_list_item_length": 254,
+   "send_ConfigMenu": true,
+   "send_SymbolIcons": true,
+   "utf8": true,
+   "wake_on_motion_quadstate": true
+  },
+  "control": "control4_remote_gen",
+  "version": 25,
+  "created": "09/01/2014 12:30 PM",
+  "modified": "04/6/2020 03:54 PM",
+  "model": "SR-260",
+  "manufacturer": "Control4",
+  "protocolControl": "control4_remote_gen",
+  "deviceOrder": 2,
+  "isOnline": false,
+  "URIs": {
+   "variables": "/api/v1/items/57/variables",
+   "network": "/api/v1/items/57/network",
+   "commands": "/api/v1/items/57/commands"
+  }
+ },
+ {
+  "type": 6,
+  "typeName": "device",
+  "name": "openHC Onscreen CONTROLLER test",
+  "parentId": 31,
+  "id": 67,
+  "proxy": "controller",
+  "proxyMeta": [
+   {
+    "name": "openHC Onscreen",
+    "proxybindingid": 5001,
+    "proxy": "controller"
+   },
+   {
+    "proxybindingid": 5002,
+    "proxy": "uidevice"
+   }
+  ],
+  "categories": [
+   "controllers",
+   "user_interface"
+  ],
+  "siteId": 11,
+  "siteName": "Home",
+  "buildingId": 12,
+  "buildingName": "House",
+  "floorId": 13,
+  "floorName": "Main",
+  "roomId": 31,
+  "roomName": "Bathroom",
+  "filename": "ohconscreencontroller.c4z",
+  "protocolId": 67,
+  "control": "lua_gen",
+  "version": 1,
+  "created": "2026-09-07",
+  "modified": "2026-09-07T20:50:26Z",
+  "model": "ohc-onscreen-controller",
+  "manufacturer": "openHC",
+  "URIs": {
+   "commands": "/api/v1/items/67/commands",
+   "zigbee": "/api/v1/items/67/zigbee"
+  }
+ },
+ {
+  "type": 7,
+  "typeName": "device",
+  "name": "openHC Onscreen",
+  "parentId": 67,
+  "id": 68,
+  "filename": "controller.c4i",
+  "proxy": "controller",
+  "proxyOrder": 1,
+  "proxyMeta": [
+   {
+    "name": "openHC Onscreen",
+    "proxybindingid": 5001,
+    "proxy": "controller"
+   }
+  ],
+  "categories": [
+   "controllers"
+  ],
+  "siteId": 11,
+  "siteName": "Home",
+  "buildingId": 12,
+  "buildingName": "House",
+  "floorId": 13,
+  "floorName": "Main",
+  "roomId": 31,
+  "roomName": "Bathroom",
+  "largeImage": "devices_lg/cmp_ico32_ea0.gif",
+  "smallImage": "devices_sm/cmp_ico16_ea0.gif",
+  "protocolId": 67,
+  "protocolName": "openHC Onscreen CONTROLLER test",
+  "protocolFilename": "ohconscreencontroller.c4z",
+  "capabilities": {
+   "auto_bind_onscreen_selection": {
+    "proxybindingid": 5001,
+    "$t": true
+   },
+   "has_navigator": true,
+   "has_ui_device": true,
+   "has_video_output": true
+  },
+  "control": "controller",
+  "version": 3,
+  "created": "05/20/2015",
+  "modified": "7/29/2015",
+  "model": "",
+  "manufacturer": "",
+  "protocolControl": "lua_gen",
+  "deviceOrder": 3,
+  "URIs": {
+   "bindings": "/api/v1/items/68/bindings",
+   "commands": "/api/v1/items/68/commands",
+   "zigbee": "/api/v1/items/68/zigbee"
+  }
+ },
+ {
+  "type": 7,
+  "typeName": "device",
+  "name": "UIDevice 2",
+  "parentId": 67,
+  "id": 69,
+  "filename": "uidevice.c4i",
+  "proxy": "uidevice",
+  "proxyOrder": 2,
+  "proxyMeta": [
+   {
+    "name": "openHC Onscreen",
+    "proxybindingid": 5001,
+    "proxy": "controller"
+   }
+  ],
+  "categories": [
+   "user_interface"
+  ],
+  "siteId": 11,
+  "siteName": "Home",
+  "buildingId": 12,
+  "buildingName": "House",
+  "floorId": 13,
+  "floorName": "Main",
+  "roomId": 31,
+  "roomName": "Bathroom",
+  "largeImage": "devices_lg/control4_touchpad_32.gif",
+  "smallImage": "devices_sm/control4_touchpad_16.gif",
+  "protocolId": 67,
+  "protocolName": "openHC Onscreen CONTROLLER test",
+  "protocolFilename": "ohconscreencontroller.c4z",
+  "capabilities": {
+   "has_navigator": true,
+   "has_ui_device": true,
+   "has_video_output": true
+  },
+  "control": "uidevice",
+  "version": 1,
+  "created": "02/19/2014",
+  "modified": "03/21/2014",
+  "model": "",
+  "manufacturer": "",
+  "protocolControl": "lua_gen",
+  "deviceOrder": 4,
+  "URIs": {
+   "variables": "/api/v1/items/69/variables",
+   "commands": "/api/v1/items/69/commands"
+  }
+ },
+ {
+  "type": 9,
+  "typeName": "agent",
+  "name": "delay",
+  "id": 100000,
+  "parentId": 1,
+  "URIs": {
+   "commands": "/api/v1/items/100000/commands"
+  }
+ },
+ {
+  "type": 9,
+  "typeName": "agent",
+  "name": "variables",
+  "id": 100001,
+  "parentId": 1,
+  "URIs": {
+   "commands": "/api/v1/items/100001/commands"
+  }
+ },
+ {
+  "type": 7,
+  "typeName": "device",
+  "name": "Digital Media",
+  "parentId": 14,
+  "id": 100002,
+  "filename": "control4_digitalaudio.c4i",
+  "proxy": "control4_digitalaudio",
+  "proxyOrder": 1,
+  "proxyMeta": [
+   {
+    "name": "control4_digitalaudio",
+    "smallImage": "devices_sm/cd.gif",
+    "smallSource": "composer",
+    "largeImage": "devices_lg/cd.gif",
+    "largeSource": "composer"
+   }
+  ],
+  "categories": [
+   "audio_video"
+  ],
+  "siteId": 11,
+  "siteName": "Home",
+  "buildingId": 12,
+  "buildingName": "House",
+  "floorId": 13,
+  "floorName": "Main",
+  "roomId": 14,
+  "roomName": "Room",
+  "largeImage": "devices_lg/cd.gif",
+  "smallImage": "devices_sm/cd.gif",
+  "protocolId": 100002,
+  "protocolName": "Digital Media",
+  "protocolFilename": "control4_digitalaudio.c4i",
+  "capabilities": {},
+  "control": "control4_digitalaudio",
+  "version": 2,
+  "created": "5/09/2005 12:30 PM",
+  "modified": "5/09/2005 12:30 PM",
+  "model": "Digital Media",
+  "manufacturer": "Control4",
+  "protocolControl": "control4_digitalaudio",
+  "deviceOrder": 3,
+  "allControlBindingsHidden": 0,
+  "URIs": {
+   "variables": "/api/v1/items/100002/variables",
+   "bindings": "/api/v1/items/100002/bindings",
+   "commands": "/api/v1/items/100002/commands"
+  }
+ },
+ {
+  "type": 9,
+  "typeName": "agent",
+  "control": "control4_agent_scheduler",
+  "name": "Scheduler",
+  "id": 100100,
+  "parentId": 1,
+  "URIs": {
+   "commands": "/api/v1/items/100100/commands"
+  }
+ },
+ {
+  "type": 9,
+  "typeName": "agent",
+  "control": "control4_agent_emailnotification",
+  "name": "Email Notification",
+  "id": 100113,
+  "parentId": 1,
+  "URIs": {
+   "commands": "/api/v1/items/100113/commands"
+  }
+ },
+ {
+  "type": 9,
+  "typeName": "agent",
+  "control": "control4_agent_diagnostics",
+  "name": "System Diagnostics",
+  "id": 100115,
+  "parentId": 1,
+  "URIs": {
+   "commands": "/api/v1/items/100115/commands"
+  }
+ },
+ {
+  "type": 9,
+  "typeName": "agent",
+  "control": "control4_agent_updatemanager",
+  "name": "Update Manager",
+  "id": 100116,
+  "parentId": 1,
+  "URIs": {
+   "commands": "/api/v1/items/100116/commands"
+  }
+ },
+ {
+  "type": 9,
+  "typeName": "agent",
+  "control": "control4_agent_remoteaccess",
+  "name": "Remote Access",
+  "id": 100117,
+  "parentId": 1,
+  "URIs": {
+   "commands": "/api/v1/items/100117/commands"
+  }
+ },
+ {
+  "type": 9,
+  "typeName": "agent",
+  "control": "control4_agent_zwave",
+  "name": "Z-Wave",
+  "id": 100123,
+  "parentId": 1,
+  "URIs": {
+   "commands": "/api/v1/items/100123/commands"
+  }
+ },
+ {
+  "type": 9,
+  "typeName": "agent",
+  "control": "control4_agent_driverupdate",
+  "name": "Driver Update",
+  "id": 100124,
+  "parentId": 1,
+  "URIs": {
+   "variables": "/api/v1/items/100124/variables",
+   "commands": "/api/v1/items/100124/commands"
+  }
+ }
+]

@@ -28,29 +28,52 @@ The shared protocol/model/loader lives in the **`lib/`** submodule
 - `backend/` — Rust (axum) server: sink + REST sync + websocket + static serve
 - `frontend/` — React + Vite + `@noriginmedia/norigin-spatial-navigation`
 
-## Run (dev)
+## Run it
 
-Terminal 1 — backend (serves ws/REST on :8080, sink on :9010):
-```sh
-cd backend
-C4_HOST=https://10.0.0.107 C4_TOKEN=<jwt> cargo run
-```
-Terminal 2 — frontend (Vite dev at :5173, proxies ws/REST to :8080):
-```sh
-cd frontend
-npm install
-npm run dev
-```
-Open http://localhost:5173. Point the on-screen driver's Target IP/Port at this
-host and :9010; press the room's C4 button and navigate with the remote.
+Clone with the submodule: `git clone --recurse-submodules <url>` (or after clone:
+`git submodule update --init`).
 
-## Run (prod / on the Pi)
+### 1. Demo mode (fastest — no controller, no token)
+The backend bundles a **sample project** (real rooms/devices captured from an EA-3),
+so you can test the whole UI immediately.
+
+**Docker:**
 ```sh
-cd frontend && npm install && npm run build      # -> frontend/dist
-cd ../backend && C4_HOST=https://<controller> C4_TOKEN=<jwt> \
-  WEB_DIR=../frontend/dist HTTP_ADDR=0.0.0.0:8080 cargo run --release
+docker compose up --build
 ```
-Then run WebKit/Chromium in kiosk mode at `http://localhost:8080`.
+**or local (no Docker):**
+```sh
+./run.sh
+```
+Open **http://localhost:8080** — you'll see rooms (Room, Bathroom) and their devices.
+Arrow keys / Enter navigate (Norigin). This is the UI you'll ship.
+
+### 2. Add the driver to Control4 (to drive it with the real remote)
+1. Build/import the on-screen driver (`lib/driver/` → `ohc-nav-sink.c4z`) in Composer Pro.
+2. Set its **Target IP Address** to the machine running this (your Mac/Pi's LAN IP)
+   and **Target Port** to **9010**.
+3. Bind **HDMI (Audio/Video)** to a TV input; the Onscreen Navigator auto-binds.
+4. Press the room's **C4 / menu** button — nav keys now stream into the UI, and the
+   status bar shows the room being navigated.
+
+### 3. Go live (real project + control)
+Provide a controller host + JWT so the UI shows your real project and tiles control
+real devices (see token minting below):
+```sh
+# Docker: put these in a .env next to docker-compose.yml
+C4_HOST=https://10.0.0.107
+C4_TOKEN=<jwt>
+docker compose up --build
+
+# or local:
+C4_HOST=https://10.0.0.107 C4_TOKEN=<jwt> ./run.sh
+```
+
+### Frontend dev server (hot reload, optional)
+```sh
+cd frontend && npm install && npm run dev    # http://localhost:5173, proxies to :8080
+```
+(run the backend separately as above.)
 
 ## Config (backend env)
 | Var | Default | Meaning |

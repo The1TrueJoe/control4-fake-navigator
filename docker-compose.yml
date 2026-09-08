@@ -1,0 +1,12 @@
+services:
+  navigator:
+    build: .
+    ports:
+      - "8080:8080"   # UI + websocket
+      - "9010:9010"   # driver sink (point the Control4 driver here)
+    environment:
+      # Leave unset for DEMO mode (bundled sample project, no controller needed).
+      # Set both for LIVE (project sync + reverse control):
+      - C4_HOST=${C4_HOST:-}
+      - C4_TOKEN=${C4_TOKEN:-}
+    restart: unless-stopped
