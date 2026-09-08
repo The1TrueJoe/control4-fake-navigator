@@ -195,6 +195,7 @@ async fn main() {
     let app = Router::new()
         .route("/ws", get(ws_handler))
         .route("/api/state", get(state_handler))
+        .route("/wallpaper", get(wallpaper_handler))
         .fallback_service(tower_http::services::ServeDir::new(web_dir))
         .with_state(state);
 
@@ -295,6 +296,20 @@ fn sync_project(api: &dyn c4::ProjectSource, state: &AppState) {
         }
         Err(e) => eprintln!("[sync] load_project: {e}"),
     }
+}
+
+/// Control4's default on-screen wallpaper (soblue), bundled so demo + live both
+/// get the real navigator look without a controller round-trip.
+const WALLPAPER: &[u8] = include_bytes!("../demo/wallpaper.jpg");
+
+async fn wallpaper_handler() -> impl IntoResponse {
+    (
+        [
+            (axum::http::header::CONTENT_TYPE, "image/jpeg"),
+            (axum::http::header::CACHE_CONTROL, "public, max-age=86400"),
+        ],
+        WALLPAPER,
+    )
 }
 
 async fn state_handler(State(s): State<AppState>) -> impl IntoResponse {

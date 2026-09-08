@@ -1,12 +1,10 @@
 #!/usr/bin/env bash
-# One-command local run (no Docker). DEMO mode unless C4_HOST/C4_TOKEN are set.
-#   ./run.sh                                  # demo (bundled sample project)
-#   C4_HOST=https://10.0.0.107 C4_TOKEN=... ./run.sh   # live
+# One-command local run (no Docker). Loads .env if present (live), else DEMO mode.
+#   ./run.sh
 set -euo pipefail
 cd "$(dirname "$0")"
-if [ ! -d frontend/dist ]; then
-  echo "building UI..."; (cd frontend && npm install && npm run build)
-fi
+[ -f .env ] && { set -a; . ./.env; set +a; echo "loaded .env (live: $C4_HOST)"; }
+if [ ! -d frontend/dist ]; then echo "building UI..."; (cd frontend && npm install && npm run build); fi
 cd backend
-echo "starting backend on :8080 (UI) + :9010 (driver sink)"
-exec env WEB_DIR=../frontend/dist cargo run --release
+echo "starting backend on :${HTTP_ADDR:-0.0.0.0:8080} (UI) + :${SINK_ADDR:-0.0.0.0:9010} (driver sink)"
+exec cargo run --release
