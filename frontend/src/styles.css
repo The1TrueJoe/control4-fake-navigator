@@ -33,3 +33,7 @@ body { background: var(--bg); color: var(--fg); font: 16px/1.4 -apple-system, sy
   transform: scale(1.04); box-shadow: 0 8px 30px #4da3ff33; }
 
 .empty { color: var(--muted); font-size: 15px; padding: 10px 2px; }
+
+.controls { display: flex; gap: 12px; margin-top: 28px; flex-wrap: wrap; }
+.controls .tile { min-height: 0; padding: 14px 22px; border-radius: 12px; background: var(--tile2); }
+.pill.ack { background: var(--accent); color: #0b0e14; border-color: transparent; font-weight: 600; }

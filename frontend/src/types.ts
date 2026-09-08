@@ -56,6 +56,15 @@ export type ServerMsg =
   | { type: 'snapshot'; project: Project; nav: NavigatorState }
   | { type: 'event'; event: EventDto }
   | { type: 'nav'; nav: NavigatorState }
+  | { type: 'command_ack'; ok: boolean; item: number; command: string; error?: string | null }
+
+// Reverse channel: UI -> backend -> Control4.
+export interface CommandMsg {
+  type: 'command'
+  item: number
+  command: string
+  params?: Record<string, unknown>
+}
 
 export function proxyName(p: ProxyKind): string {
   return typeof p === 'string' ? p : p.other

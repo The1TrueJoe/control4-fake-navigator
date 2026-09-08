@@ -1,17 +1,15 @@
 //! control4-fake-navigator backend.
 //!
-//! - Runs the sink server (receives nav keys relayed by the on-screen DriverWorks
-//!   driver) — `control4-navigator-sink-lib`.
-//! - Live-syncs the Control4 project + room state over the REST API (Strategy A).
-//! - Serves the React UI and streams a unified feed (snapshot + nav events +
-//!   room-state updates) to it over a websocket.
+//! - Sink server: receives nav keys relayed by the on-screen DriverWorks driver.
+//! - REST live-sync: loads the Control4 project + room state (Strategy A).
+//! - Websocket: streams snapshot + nav events + state to the React UI.
+//! - Reverse channel: UI actions -> Control4 commands (`POST /items/:id/commands`).
 //!
-//! Config via env:
-//!   C4_HOST    e.g. https://10.0.0.107   (Control4 controller)
-//!   C4_TOKEN   Bearer JWT (see lib docs/navigator-data-model.md to mint one)
-//!   SINK_ADDR  default 0.0.0.0:9010      (driver connects here)
-//!   HTTP_ADDR  default 0.0.0.0:8080      (UI + websocket)
-//!   WEB_DIR    default ../frontend/dist  (built React app; optional in dev)
+//! All controller HTTP (reqwest::blocking) runs on ONE dedicated std thread — never
+//! inside the tokio runtime (reqwest::blocking panics there). The ws handler submits
+//! commands to that thread over a channel.
+//!
+//! Env: C4_HOST, C4_TOKEN, SINK_ADDR (0.0.0.0:9010), HTTP_ADDR (0.0.0.0:8080), WEB_DIR.
 
 use axum::extract::ws::{Message, WebSocket, WebSocketUpgrade};
 use axum::extract::State;
@@ -19,27 +17,39 @@ use axum::response::IntoResponse;
 use axum::routing::get;
 use axum::Router;
 use control4_navigator_sink_lib as c4;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
+use std::sync::mpsc;
 use std::sync::{Arc, RwLock};
-use std::time::Duration;
+use std::time::{Duration, Instant};
 use tokio::sync::broadcast;
 
-/// Messages pushed to the UI over the websocket.
 #[derive(Debug, Clone, Serialize)]
 #[serde(tag = "type", rename_all = "snake_case")]
 enum ServerMsg {
-    /// Full current state, sent on connect and after a project resync.
-    Snapshot {
-        project: c4::Project,
-        nav: c4::NavigatorState,
-    },
-    /// A live navigation/command event from the driver relay.
+    Snapshot { project: c4::Project, nav: c4::NavigatorState },
     Event { event: EventDto },
-    /// Live navigator state changed (binding/nav-room/last-key/popup…).
     Nav { nav: c4::NavigatorState },
+    CommandAck { ok: bool, item: u32, command: String, error: Option<String> },
 }
 
-/// Flattened, UI-friendly view of a relay [`c4::Event`].
+#[derive(Debug, Clone, Deserialize)]
+#[serde(tag = "type", rename_all = "snake_case")]
+enum ClientMsg {
+    Command {
+        item: u32,
+        command: String,
+        #[serde(default)]
+        params: serde_json::Value,
+    },
+}
+
+/// A reverse-channel command request handed to the control thread.
+struct CmdReq {
+    item: u32,
+    command: String,
+    params: serde_json::Value,
+}
+
 #[derive(Debug, Clone, Serialize)]
 struct EventDto {
     kind: String,
@@ -51,44 +61,71 @@ struct EventDto {
 impl From<&c4::Event> for EventDto {
     fn from(e: &c4::Event) -> Self {
         use c4::Event::*;
+        let mut d = EventDto { kind: "other".into(), key: None, room: None, command: None };
         match e {
-            Nav { room, key } => EventDto {
-                kind: "nav".into(),
-                key: Some(key.as_command().into()),
-                room: *room,
-                command: None,
-            },
-            EnterNavigation { room } => EventDto {
-                kind: "enter_navigation".into(),
-                key: None,
-                room: Some(*room),
-                command: None,
-            },
-            ExitNavigation { room } => EventDto {
-                kind: "exit_navigation".into(),
-                key: None,
-                room: *room,
-                command: None,
-            },
-            Binding { binding, class, bound } => EventDto {
-                kind: if *bound { "bind" } else { "unbind" }.into(),
-                key: None,
-                room: None,
-                command: Some(format!("{class}:{binding}")),
-            },
-            Popup { show, .. } => EventDto {
-                kind: if *show { "popup_show" } else { "popup_hide" }.into(),
-                key: None,
-                room: None,
-                command: None,
-            },
-            other => EventDto {
-                kind: "other".into(),
-                key: None,
-                room: None,
-                command: Some(format!("{other:?}")),
-            },
+            Nav { room, key } => {
+                d.kind = "nav".into();
+                d.key = Some(key.as_command().into());
+                d.room = *room;
+            }
+            EnterNavigation { room } => {
+                d.kind = "enter_navigation".into();
+                d.room = Some(*room);
+            }
+            ExitNavigation { room } => {
+                d.kind = "exit_navigation".into();
+                d.room = *room;
+            }
+            Binding { binding, class, bound } => {
+                d.kind = if *bound { "bind" } else { "unbind" }.into();
+                d.command = Some(format!("{class}:{binding}"));
+            }
+            Popup { show, .. } => d.kind = if *show { "popup_show" } else { "popup_hide" }.into(),
+            other => d.command = Some(format!("{other:?}")),
         }
+        d
+    }
+}
+
+struct C4Api {
+    base: String,
+    token: String,
+    http: reqwest::blocking::Client,
+}
+
+impl C4Api {
+    fn io(e: String) -> c4::Error {
+        c4::Error::Io(std::io::Error::new(std::io::ErrorKind::Other, e))
+    }
+    fn send_command(&self, item: u32, command: &str, params: &serde_json::Value) -> c4::Result<()> {
+        let body = serde_json::json!({ "command": command, "params": params });
+        let resp = self
+            .http
+            .post(format!("{}/api/v1/items/{item}/commands", self.base))
+            .bearer_auth(&self.token)
+            .json(&body)
+            .send()
+            .map_err(|e| Self::io(e.to_string()))?;
+        if resp.status().is_success() {
+            Ok(())
+        } else {
+            Err(Self::io(format!("{} -> {}", command, resp.status())))
+        }
+    }
+}
+
+impl c4::ProjectSource for C4Api {
+    fn get_json(&self, path: &str) -> c4::Result<serde_json::Value> {
+        let resp = self
+            .http
+            .get(format!("{}{}", self.base, path))
+            .bearer_auth(&self.token)
+            .send()
+            .map_err(|e| Self::io(e.to_string()))?;
+        if !resp.status().is_success() {
+            return Err(Self::io(format!("GET {path} -> {}", resp.status())));
+        }
+        resp.json().map_err(|e| Self::io(e.to_string()))
     }
 }
 
@@ -97,29 +134,7 @@ struct AppState {
     project: Arc<RwLock<c4::Project>>,
     nav: Arc<RwLock<c4::NavigatorState>>,
     tx: broadcast::Sender<ServerMsg>,
-}
-
-/// A [`c4::ProjectSource`] backed by the controller's REST API.
-struct C4Api {
-    base: String,
-    token: String,
-    http: reqwest::blocking::Client,
-}
-
-impl c4::ProjectSource for C4Api {
-    fn get_json(&self, path: &str) -> c4::Result<serde_json::Value> {
-        let io = |e: String| c4::Error::Io(std::io::Error::new(std::io::ErrorKind::Other, e));
-        let resp = self
-            .http
-            .get(format!("{}{}", self.base, path))
-            .bearer_auth(&self.token)
-            .send()
-            .map_err(|e| io(e.to_string()))?;
-        if !resp.status().is_success() {
-            return Err(io(format!("GET {path} -> {}", resp.status())));
-        }
-        resp.json().map_err(|e| io(e.to_string()))
-    }
+    cmd_tx: Option<mpsc::Sender<CmdReq>>,
 }
 
 #[tokio::main]
@@ -129,16 +144,29 @@ async fn main() {
     let web_dir = env_or("WEB_DIR", "../frontend/dist");
 
     let (tx, _rx) = broadcast::channel::<ServerMsg>(256);
+    let creds = (std::env::var("C4_HOST").ok(), std::env::var("C4_TOKEN").ok());
+    let cmd_tx = match creds {
+        (Some(host), Some(token)) => {
+            let (ctx, crx) = mpsc::channel::<CmdReq>();
+            Some((host, token, ctx, crx))
+        }
+        _ => {
+            println!("[sync] C4_HOST/C4_TOKEN unset — no project sync / reverse commands");
+            None
+        }
+    };
+
     let state = AppState {
         project: Arc::new(RwLock::new(c4::Project::default())),
         nav: Arc::new(RwLock::new(c4::NavigatorState::new())),
         tx: tx.clone(),
+        cmd_tx: cmd_tx.as_ref().map(|(_, _, ctx, _)| ctx.clone()),
     };
 
-    // Sink: receive the driver relay on a std thread, fold + broadcast.
     spawn_sink(state.clone(), sink_addr.clone());
-    // Project sync: poll the REST API if configured.
-    spawn_project_sync(state.clone());
+    if let Some((host, token, _ctx, crx)) = cmd_tx {
+        spawn_control(state.clone(), host, token, crx);
+    }
 
     let app = Router::new()
         .route("/ws", get(ws_handler))
@@ -177,12 +205,9 @@ fn spawn_sink(state: AppState, addr: String) {
     });
 }
 
-fn spawn_project_sync(state: AppState) {
-    let (host, token) = (std::env::var("C4_HOST").ok(), std::env::var("C4_TOKEN").ok());
-    let (Some(host), Some(token)) = (host, token) else {
-        println!("[sync] C4_HOST/C4_TOKEN not set — project stays empty (nav events still stream)");
-        return;
-    };
+/// The single controller-HTTP thread: builds the blocking client (outside tokio),
+/// periodically syncs the project, and executes reverse-channel commands.
+fn spawn_control(state: AppState, host: String, token: String, rx: mpsc::Receiver<CmdReq>) {
     std::thread::spawn(move || {
         let api = C4Api {
             base: host,
@@ -194,34 +219,56 @@ fn spawn_project_sync(state: AppState) {
                 .expect("http client"),
         };
         loop {
-            match c4::load_project(&api) {
-                Ok(mut project) => {
-                    // fold live room variables
-                    let room_ids: Vec<u32> = project.rooms.keys().copied().collect();
-                    for rid in room_ids {
-                        if let Ok(vars) = c4::load_room_variables(&api, rid) {
-                            if let Some(room) = project.rooms.get_mut(&rid) {
-                                c4::apply_room_variables(room, &vars);
-                            }
-                        }
-                    }
-                    *state.project.write().unwrap() = project.clone();
-                    let nav = state.nav.read().unwrap().clone();
-                    let _ = state.tx.send(ServerMsg::Snapshot { project, nav });
+            sync_project(&api, &state);
+            // Serve commands for ~15s, then resync.
+            let deadline = Instant::now() + Duration::from_secs(15);
+            loop {
+                let now = Instant::now();
+                if now >= deadline {
+                    break;
                 }
-                Err(e) => eprintln!("[sync] load_project: {e}"),
+                match rx.recv_timeout(deadline - now) {
+                    Ok(req) => {
+                        let res = api.send_command(req.item, &req.command, &req.params);
+                        let _ = state.tx.send(ServerMsg::CommandAck {
+                            ok: res.is_ok(),
+                            item: req.item,
+                            command: req.command,
+                            error: res.err().map(|e| e.to_string()),
+                        });
+                    }
+                    Err(mpsc::RecvTimeoutError::Timeout) => break,
+                    Err(mpsc::RecvTimeoutError::Disconnected) => return,
+                }
             }
-            std::thread::sleep(Duration::from_secs(15));
         }
     });
 }
 
+fn sync_project(api: &C4Api, state: &AppState) {
+    match c4::load_project(api) {
+        Ok(mut project) => {
+            let room_ids: Vec<u32> = project.rooms.keys().copied().collect();
+            for rid in room_ids {
+                if let Ok(vars) = c4::load_room_variables(api, rid) {
+                    if let Some(room) = project.rooms.get_mut(&rid) {
+                        c4::apply_room_variables(room, &vars);
+                    }
+                }
+            }
+            *state.project.write().unwrap() = project.clone();
+            let nav = state.nav.read().unwrap().clone();
+            let _ = state.tx.send(ServerMsg::Snapshot { project, nav });
+        }
+        Err(e) => eprintln!("[sync] load_project: {e}"),
+    }
+}
+
 async fn state_handler(State(s): State<AppState>) -> impl IntoResponse {
-    let snap = ServerMsg::Snapshot {
+    axum::Json(ServerMsg::Snapshot {
         project: s.project.read().unwrap().clone(),
         nav: s.nav.read().unwrap().clone(),
-    };
-    axum::Json(snap)
+    })
 }
 
 async fn ws_handler(ws: WebSocketUpgrade, State(s): State<AppState>) -> impl IntoResponse {
@@ -229,19 +276,13 @@ async fn ws_handler(ws: WebSocketUpgrade, State(s): State<AppState>) -> impl Int
 }
 
 async fn ws_loop(mut socket: WebSocket, s: AppState) {
-    // Send an initial snapshot.
     let snap = ServerMsg::Snapshot {
         project: s.project.read().unwrap().clone(),
         nav: s.nav.read().unwrap().clone(),
     };
-    if socket
-        .send(Message::Text(serde_json::to_string(&snap).unwrap()))
-        .await
-        .is_err()
-    {
+    if socket.send(Message::Text(serde_json::to_string(&snap).unwrap())).await.is_err() {
         return;
     }
-    // Stream updates.
     let mut rx = s.tx.subscribe();
     loop {
         tokio::select! {
@@ -255,9 +296,30 @@ async fn ws_loop(mut socket: WebSocket, s: AppState) {
                 Err(_) => break,
             },
             incoming = socket.recv() => match incoming {
-                Some(Ok(_)) => {} // ignore client->server for now
+                Some(Ok(Message::Text(t))) => handle_client_msg(&s, &t),
+                Some(Ok(_)) => {}
                 _ => break,
             }
+        }
+    }
+}
+
+fn handle_client_msg(s: &AppState, text: &str) {
+    let Ok(ClientMsg::Command { item, command, params }) = serde_json::from_str::<ClientMsg>(text)
+    else {
+        return;
+    };
+    match &s.cmd_tx {
+        Some(tx) => {
+            let _ = tx.send(CmdReq { item, command, params });
+        }
+        None => {
+            let _ = s.tx.send(ServerMsg::CommandAck {
+                ok: false,
+                item,
+                command,
+                error: Some("controller not configured (set C4_HOST/C4_TOKEN)".into()),
+            });
         }
     }
 }

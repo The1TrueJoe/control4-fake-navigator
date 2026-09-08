@@ -4,7 +4,7 @@ import {
   FocusContext,
   setFocus,
 } from '@noriginmedia/norigin-spatial-navigation'
-import type { Project, NavigatorState, ServerMsg, Room, Device, Menu } from './types'
+import type { Project, NavigatorState, ServerMsg, Room, Device, Menu, CommandMsg } from './types'
 import { menuFor, proxyName } from './types'
 import { handleC4Key, registerEnter, unregisterEnter } from './nav'
 
@@ -35,11 +35,7 @@ function Tile({
 }
 
 function Section({ className, focusKey, children }: { className: string; focusKey?: string; children: React.ReactNode }) {
-  const { ref, focusKey: fk } = useFocusable({
-    trackChildren: true,
-    saveLastFocusedChild: true,
-    focusKey,
-  })
+  const { ref, focusKey: fk } = useFocusable({ trackChildren: true, saveLastFocusedChild: true, focusKey })
   return (
     <FocusContext.Provider value={fk}>
       <div ref={ref} className={className}>
@@ -56,8 +52,13 @@ export function App() {
   const [mode, setMode] = useState<'rooms' | 'room'>('rooms')
   const [roomId, setRoomId] = useState<number | null>(null)
   const [menu, setMenu] = useState<Menu>('Watch')
+  const [ack, setAck] = useState<string | null>(null)
 
-  // Back handler kept in a ref so the ws closure always calls the current one.
+  const wsRef = useRef<WebSocket | null>(null)
+  const send = (msg: CommandMsg) => wsRef.current?.send(JSON.stringify(msg))
+  const cmd = (item: number, command: string, params?: Record<string, unknown>) =>
+    send({ type: 'command', item, command, params: params ?? {} })
+
   const backRef = useRef<() => void>(() => {})
   backRef.current = () => {
     if (mode === 'room') {
@@ -69,6 +70,7 @@ export function App() {
   useEffect(() => {
     const url = `${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.host}/ws`
     const ws = new WebSocket(url)
+    wsRef.current = ws
     ws.onopen = () => setConnected(true)
     ws.onclose = () => setConnected(false)
     ws.onmessage = (e) => {
@@ -78,12 +80,14 @@ export function App() {
         setNav(m.nav)
       } else if (m.type === 'nav') {
         setNav(m.nav)
+      } else if (m.type === 'command_ack') {
+        setAck(m.ok ? `sent ${m.command}` : `failed ${m.command}: ${m.error ?? ''}`)
+        setTimeout(() => setAck(null), 2500)
       } else if (m.type === 'event') {
         const ev = m.event
         if (ev.kind === 'nav' && ev.key) {
           handleC4Key(ev.key, () => backRef.current())
         } else if (ev.kind === 'enter_navigation' && ev.room != null) {
-          // Room-aware: follow the room the remote is controlling.
           setRoomId(ev.room)
           setMode('room')
           setTimeout(() => setFocus('devices'), 0)
@@ -103,6 +107,12 @@ export function App() {
     setTimeout(() => setFocus('devices'), 0)
   }
 
+  // Selecting a device routes it as the room's source (reverse channel).
+  const selectDevice = (r: Room, d: Device) => {
+    const command = menu === 'Listen' ? 'SELECT_AUDIO_DEVICE' : 'SELECT_VIDEO_DEVICE'
+    cmd(r.id, command, { deviceid: d.id })
+  }
+
   return (
     <div className="app">
       <header className="topbar">
@@ -111,7 +121,15 @@ export function App() {
           <span className={connected ? 'dot ok' : 'dot bad'} /> {connected ? 'linked' : 'offline'}
           {nav.online && <span className="pill">driver online</span>}
           {navRoomName && <span className="pill nav">navigating: {navRoomName}</span>}
-          {room && <span className="pill">{room.name}{room.power_on ? ' · on' : ''}{room.volume != null ? ` · vol ${room.volume}` : ''}</span>}
+          {room && (
+            <span className="pill">
+              {room.name}
+              {room.power_on ? ' · on' : ''}
+              {room.volume != null ? ` · vol ${room.volume}` : ''}
+              {room.is_muted ? ' · muted' : ''}
+            </span>
+          )}
+          {ack && <span className="pill ack">{ack}</span>}
         </div>
       </header>
 
@@ -142,10 +160,16 @@ export function App() {
                 label={d.name}
                 sub={proxyName(d.proxy)}
                 active={room.now_playing.source_device === d.id}
-                onEnter={() => {/* TODO: SELECT_SOURCE via reverse channel */}}
+                onEnter={() => selectDevice(room, d)}
               />
             ))}
             {devicesIn(room, menu).length === 0 && <div className="empty">Nothing under {menu} here.</div>}
+          </Section>
+          <Section className="controls" focusKey="controls">
+            <Tile label="Vol −" onEnter={() => cmd(room.id, 'PULSE_VOL_DOWN')} />
+            <Tile label="Vol +" onEnter={() => cmd(room.id, 'PULSE_VOL_UP')} />
+            <Tile label={room.is_muted ? 'Unmute' : 'Mute'} onEnter={() => cmd(room.id, 'MUTE_TOGGLE')} />
+            <Tile label="Room Off" onEnter={() => cmd(room.id, 'ROOM_OFF')} />
           </Section>
         </main>
       )}
