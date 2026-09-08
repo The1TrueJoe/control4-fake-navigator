@@ -7,11 +7,18 @@ export function unregisterEnter(key: string) { enterHandlers.delete(key) }
 function pressEnter() { const k = getCurrentFocusKey(); if (k) enterHandlers.get(k)?.() }
 
 // Map a C4 nav key (from the driver relay) onto focus movement / activation.
-export function handleC4Key(key: string, onBack: () => void) {
+// `onLeftEdge` fires when LEFT can't move focus any further left — used to slide
+// the room drawer in (TV-style: navigate left past the content to reach rooms).
+export function handleC4Key(key: string, onBack: () => void, onLeftEdge?: () => void) {
   switch (key) {
     case 'UP': navigateByDirection('up', {}); break
     case 'DOWN': navigateByDirection('down', {}); break
-    case 'LEFT': navigateByDirection('left', {}); break
+    case 'LEFT': {
+      const before = getCurrentFocusKey()
+      navigateByDirection('left', {})
+      if (onLeftEdge && getCurrentFocusKey() === before) onLeftEdge()
+      break
+    }
     case 'RIGHT': navigateByDirection('right', {}); break
     case 'ENTER': pressEnter(); break
     case 'BACK': case 'CANCEL': onBack(); break

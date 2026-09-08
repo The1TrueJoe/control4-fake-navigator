@@ -12,7 +12,8 @@
 //! Env: C4_HOST, C4_TOKEN, SINK_ADDR (0.0.0.0:9010), HTTP_ADDR (0.0.0.0:8080), WEB_DIR.
 
 use axum::extract::ws::{Message, WebSocket, WebSocketUpgrade};
-use axum::extract::State;
+use axum::extract::{Path, State};
+use axum::http::StatusCode;
 use axum::response::IntoResponse;
 use axum::routing::get;
 use axum::Router;
@@ -146,12 +147,50 @@ impl c4::ProjectSource for DemoSource {
     }
 }
 
+/// Proxies driver navigator icons (`controller://driver/.../*.png`) from the
+/// controller, attaching the JWT and accepting the self-signed cert, so the browser
+/// can `<img>` them without ever seeing the token. Uses an async client (the
+/// blocking one would panic inside axum's runtime).
+struct IconProxy {
+    base: String,
+    token: String,
+    client: reqwest::Client,
+}
+
+impl IconProxy {
+    fn new(base: String, token: String) -> Self {
+        let client = reqwest::Client::builder()
+            .danger_accept_invalid_certs(true)
+            .timeout(Duration::from_secs(10))
+            .build()
+            .expect("icon http client");
+        Self { base, token, client }
+    }
+
+    async fn fetch(&self, path: &str) -> Option<(String, Vec<u8>)> {
+        let url = format!("{}/{}", self.base.trim_end_matches('/'), path);
+        let resp = self.client.get(&url).bearer_auth(&self.token).send().await.ok()?;
+        if !resp.status().is_success() {
+            return None;
+        }
+        let ctype = resp
+            .headers()
+            .get(reqwest::header::CONTENT_TYPE)
+            .and_then(|v| v.to_str().ok())
+            .unwrap_or("image/png")
+            .to_string();
+        let bytes = resp.bytes().await.ok()?.to_vec();
+        Some((ctype, bytes))
+    }
+}
+
 #[derive(Clone)]
 struct AppState {
     project: Arc<RwLock<c4::Project>>,
     nav: Arc<RwLock<c4::NavigatorState>>,
     tx: broadcast::Sender<ServerMsg>,
     cmd_tx: Option<mpsc::Sender<CmdReq>>,
+    icons: Option<Arc<IconProxy>>,
 }
 
 #[tokio::main]
@@ -165,6 +204,12 @@ async fn main() {
     // and copy/paste often leaves quotes or a trailing newline — treat all of those
     // as "unset" so we cleanly fall back to demo mode instead of erroring.
     let creds = (env_clean("C4_HOST"), env_clean("C4_TOKEN"));
+    // Icon proxy (live mode only) — needs its own async client, so build it from a
+    // clone of the creds before they're moved into the control thread.
+    let icons = match &creds {
+        (Some(host), Some(token)) => Some(Arc::new(IconProxy::new(host.clone(), token.clone()))),
+        _ => None,
+    };
     let cmd_tx = match creds {
         (Some(host), Some(token)) => {
             let (ctx, crx) = mpsc::channel::<CmdReq>();
@@ -181,6 +226,7 @@ async fn main() {
         nav: Arc::new(RwLock::new(c4::NavigatorState::new())),
         tx: tx.clone(),
         cmd_tx: cmd_tx.as_ref().map(|(_, _, ctx, _)| ctx.clone()),
+        icons,
     };
 
     spawn_sink(state.clone(), sink_addr.clone());
@@ -196,6 +242,7 @@ async fn main() {
         .route("/ws", get(ws_handler))
         .route("/api/state", get(state_handler))
         .route("/wallpaper", get(wallpaper_handler))
+        .route("/c4icon/*path", get(icon_handler))
         .fallback_service(tower_http::services::ServeDir::new(web_dir))
         .with_state(state);
 
@@ -321,6 +368,29 @@ fn sync_project(api: &dyn c4::ProjectSource, state: &AppState) {
 /// Control4's default on-screen wallpaper (soblue), bundled so demo + live both
 /// get the real navigator look without a controller round-trip.
 const WALLPAPER: &[u8] = include_bytes!("../demo/wallpaper.jpg");
+
+/// Proxy a driver navigator icon, e.g. `/c4icon/driver/um_netflix/icons/device/
+/// experience_300.png`. 404s in demo mode or on any fetch failure so the UI falls
+/// back to its built-in glyph.
+async fn icon_handler(State(s): State<AppState>, Path(path): Path<String>) -> impl IntoResponse {
+    let Some(icons) = s.icons.as_ref() else {
+        return StatusCode::NOT_FOUND.into_response();
+    };
+    if path.contains("..") {
+        return StatusCode::BAD_REQUEST.into_response();
+    }
+    match icons.fetch(&path).await {
+        Some((ctype, bytes)) => (
+            [
+                (axum::http::header::CONTENT_TYPE, ctype),
+                (axum::http::header::CACHE_CONTROL, "public, max-age=604800".to_string()),
+            ],
+            bytes,
+        )
+            .into_response(),
+        None => StatusCode::NOT_FOUND.into_response(),
+    }
+}
 
 async fn wallpaper_handler() -> impl IntoResponse {
     (

@@ -7,6 +7,7 @@ export interface Device {
   name: string
   proxy: ProxyKind
   room_id?: number | null
+  icon?: string | null
   props: Record<string, string>
 }
 
@@ -27,6 +28,7 @@ export interface Source {
   name: string
   kind: string // HDMI, RF_MINI_APP, STEREO, DIGITAL_AUDIO_SERVER, COMPONENT, ...
   audio_video: boolean
+  icon?: string | null
 }
 
 export interface Room {

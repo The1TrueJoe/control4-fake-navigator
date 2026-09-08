@@ -1,9 +1,10 @@
 // Lucide icons — no emoji anywhere in the UI.
+import { useState } from 'react'
 import {
   Tv, Music, Lightbulb, Thermometer, ShieldCheck, Blinds, Video,
   PlayCircle, Disc, Satellite, AppWindow, Speaker, Radio, Router,
   Lock, Fan, Waves, Tablet, Cpu, Phone, Gamepad2, Square,
-  Cable, MonitorPlay, ListMusic,
+  Cable, MonitorPlay, ListMusic, PanelLeftClose, PanelLeft,
   DoorOpen, Star, Volume1, Volume2, VolumeX, Power, ChevronLeft,
   SkipBack, Play, Pause, SkipForward, Square as Stop, Plus, Minus,
   type LucideIcon,
@@ -12,6 +13,14 @@ import type { Menu, ProxyKind } from './types'
 import { proxyName } from './types'
 
 type IconCmp = LucideIcon
+
+/** Real Control4 driver icon (served through the backend proxy), falling back to a
+ *  Lucide glyph if the driver ships none or the fetch fails. */
+export function C4Icon({ path, fallback }: { path?: string | null; fallback: React.ReactNode }) {
+  const [failed, setFailed] = useState(false)
+  if (!path || failed) return <>{fallback}</>
+  return <img className="tile-img" src={`/c4icon/${path}`} onError={() => setFailed(true)} alt="" />
+}
 
 const EXP: Partial<Record<Menu, IconCmp>> = {
   Watch: Tv, Listen: Music, Lighting: Lightbulb, Comfort: Thermometer,
@@ -50,4 +59,5 @@ export function SourceIcon({ kind, size = 26 }: { kind: string; size?: number })
 export {
   DoorOpen, Star, Volume1, Volume2, VolumeX, Power, ChevronLeft,
   SkipBack, Play, Pause, SkipForward, Stop, Plus, Minus,
+  PanelLeftClose, PanelLeft,
 }

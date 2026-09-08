@@ -1,12 +1,12 @@
 import { useEffect, useRef, useState } from 'react'
 import { setFocus } from '@noriginmedia/norigin-spatial-navigation'
 import type { Project, NavigatorState, ServerMsg, Room, Device, Source, Menu, CommandMsg } from './types'
-import { menuFor, deviceKind, sourceKind } from './types'
+import { menuFor, deviceKind } from './types'
 import { handleC4Key } from './nav'
-import { Tile, Section, Clock } from './ui'
+import { Tile, Section, Clock, cx } from './ui'
 import {
-  ExperienceIcon, DeviceIcon, SourceIcon, DoorOpen, Star, Volume1, Volume2, VolumeX, Power,
-  ChevronLeft, SkipBack, Play, Pause, SkipForward, Stop,
+  ExperienceIcon, DeviceIcon, SourceIcon, C4Icon, DoorOpen, Volume1, Volume2, VolumeX, Power,
+  ChevronLeft, SkipBack, Play, Pause, SkipForward, Stop, PanelLeft,
 } from './icons'
 
 const MENUS: Menu[] = ['Watch', 'Listen', 'Lighting', 'Comfort', 'Security', 'Shades', 'Cameras']
@@ -21,21 +21,24 @@ const TRANSPORTS = [
   { key: 'SCAN_FWD', cmd: 'SCAN_FWD', Icon: SkipForward },
 ] as const
 
-// Name of a selected/now-playing id, resolved across the room's sources + devices.
-function nameOf(room: Room | undefined, id: number | null | undefined): string | undefined {
+// A selected/now-playing id, resolved across the room's sources + devices.
+function itemOf(room: Room | undefined, id: number | null | undefined) {
   if (!room || id == null) return undefined
   const s = [...(room.watch ?? []), ...(room.listen ?? [])].find((x) => x.id === id)
-  return s?.name ?? room.devices[id]?.name
+  if (s) return { name: s.name, icon: s.icon }
+  const d = room.devices[id]
+  return d ? { name: d.name, icon: d.icon } : undefined
 }
 
 export function App() {
   const [project, setProject] = useState<Project>({ rooms: {}, devices: {} })
   const [nav, setNav] = useState<NavigatorState>({ online: false })
-  const [connected, setConnected] = useState(false)
   const [ack, setAck] = useState<string | null>(null)
   const [roomId, setRoomId] = useState<number | null>(null)
   const [menu, setMenu] = useState<Menu>('Watch')
   const [openId, setOpenId] = useState<number | null>(null)
+  const [navOpen, setNavOpen] = useState(true) // room drawer (TV-style; hidden once in a room)
+  const [osdHidden, setOsdHidden] = useState(false) // OSD dismissed after selecting a source
 
   const wsRef = useRef<WebSocket | null>(null)
   const send = (m: CommandMsg) => wsRef.current?.send(JSON.stringify(m))
@@ -46,20 +49,23 @@ export function App() {
   const room: Room | undefined = roomId != null ? project.rooms[roomId] : rooms[0]
   const openDev = room && openId != null ? room.devices[openId] : undefined
 
+  // Refs so the once-created WebSocket handler sees current UI state.
+  const osdRef = useRef(osdHidden); osdRef.current = osdHidden
+  const navOpenRef = useRef(navOpen); navOpenRef.current = navOpen
   const backRef = useRef<() => void>(() => {})
   backRef.current = () => {
-    if (openId != null) {
-      setOpenId(null)
-      setTimeout(() => setFocus('devices'), 0)
-    }
+    if (osdHidden) return
+    if (openId != null) { setOpenId(null); setTimeout(() => setFocus('devices'), 0) }
+    else if (!navOpen) revealRooms()
+    else setNavOpen(false)
   }
+  const leftEdgeRef = useRef<() => void>(() => {})
+  leftEdgeRef.current = () => { if (!navOpen) revealRooms() }
 
   useEffect(() => {
     const url = `${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.host}/ws`
     const ws = new WebSocket(url)
     wsRef.current = ws
-    ws.onopen = () => setConnected(true)
-    ws.onclose = () => setConnected(false)
     ws.onmessage = (e) => {
       const m: ServerMsg = JSON.parse(e.data)
       if (m.type === 'snapshot') { setProject(m.project); setNav(m.nav) }
@@ -69,60 +75,82 @@ export function App() {
         setTimeout(() => setAck(null), 2200)
       } else if (m.type === 'event') {
         const ev = m.event
-        if (ev.kind === 'nav' && ev.key) handleC4Key(ev.key, () => backRef.current())
-        else if (ev.kind === 'enter_navigation' && ev.room != null) {
-          setRoomId(ev.room); setOpenId(null); setTimeout(() => setFocus('devices'), 0)
+        if (ev.kind === 'enter_navigation' && ev.room != null) {
+          // C4 button: bring the OSD up for that room's sources.
+          setOsdHidden(false); setNavOpen(false); setRoomId(ev.room); setOpenId(null)
+          setTimeout(() => setFocus('menus'), 0)
+        } else if (ev.kind === 'nav' && ev.key) {
+          if (osdRef.current) { setOsdHidden(false); setTimeout(() => setFocus('menus'), 0) }
+          else handleC4Key(ev.key, () => backRef.current(), () => leftEdgeRef.current())
         }
       }
     }
     return () => ws.close()
   }, [])
 
-  const openRoom = (id: number) => { setRoomId(id); setOpenId(null); setTimeout(() => setFocus('devices'), 0) }
-
-  // Selecting a Watch/Listen source routes the room to it (the select IS the action).
-  const selectSource = (r: Room, s: Source) =>
+  const revealRooms = () => { setNavOpen(true); setTimeout(() => setFocus('rooms'), 0) }
+  const openRoom = (id: number) => {
+    setRoomId(id); setOpenId(null); setNavOpen(false); setOsdHidden(false)
+    setTimeout(() => setFocus('menus'), 0)
+  }
+  // Selecting a Watch/Listen source routes the room to it, then dismisses the OSD —
+  // the TV is now showing that source, so there's nothing for us to draw.
+  const selectSource = (r: Room, s: Source) => {
     cmd(r.id, menu === 'Listen' ? 'SELECT_AUDIO_DEVICE' : 'SELECT_VIDEO_DEVICE', { deviceid: s.id })
-  // Opening a controllable device (lights/shades/locks/…) shows its control panel.
+    setOsdHidden(true)
+  }
   const openDevice = (d: Device) => { setOpenId(d.id); setTimeout(() => setFocus('panel'), 0) }
+  const showOsd = () => { setOsdHidden(false); setTimeout(() => setFocus('menus'), 0) }
 
   const navRoomName = nav.navigating_room != null ? project.rooms[nav.navigating_room]?.name : undefined
+
+  // Only show experience tabs the room actually has (no Shades tab without shades).
+  const menuHasContent = (m: Menu) =>
+    m === 'Watch' ? (room?.watch?.length ?? 0) > 0
+    : m === 'Listen' ? (room?.listen?.length ?? 0) > 0
+    : room ? Object.values(room.devices).some((d) => menuFor(d.proxy) === m) : false
+  const availableMenus = MENUS.filter(menuHasContent)
+  useEffect(() => {
+    if (availableMenus.length && !availableMenus.includes(menu)) setMenu(availableMenus[0])
+  }, [roomId, availableMenus.join()]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Current menu contents: sources for Watch/Listen, proxy devices otherwise.
   const sources: Source[] = room ? (menu === 'Watch' ? room.watch ?? [] : menu === 'Listen' ? room.listen ?? [] : []) : []
   const menuDevices = room && !isAV(menu) ? Object.values(room.devices).filter((d) => menuFor(d.proxy) === menu) : []
-  const favSet = new Set(room?.favorites ?? [])
-  const favSources = sources.filter((s) => favSet.has(s.id))
   const count = isAV(menu) ? sources.length : menuDevices.length
-  const noun = isAV(menu) ? `source${count === 1 ? '' : 's'}` : `device${count === 1 ? '' : 's'}`
 
-  // Currently-selected source id for this menu (for the active highlight + now playing).
   const activeId = room ? (menu === 'Listen' ? room.current_audio_device : menu === 'Watch' ? room.current_video_device : null) ?? null : null
   const npId = room ? room.now_playing.source_device ?? room.current_video_device ?? room.current_audio_device ?? null : null
-  const npName = nameOf(room, npId)
+  const npItem = itemOf(room, npId)
+  const npName = npItem?.name
 
-  // rooms grouped by floor for the sidebar
+  // rooms grouped by floor for the drawer
   const floors: Record<string, Room[]> = {}
   for (const r of rooms) (floors[r.floor || 'Rooms'] ||= []).push(r)
 
+  // OSD dismissed: the TV is showing the selected source — draw nothing but a way back.
+  if (osdHidden) {
+    return (
+      <button className="osd-off" onClick={showOsd}>
+        <span className="osd-hint">Source active — tap or press a key for the menu</span>
+      </button>
+    )
+  }
+
   return (
-    <div className="app">
+    <div className={cx('app', navOpen && 'nav-open')}>
       <div className="scrim" />
+      {navOpen && <div className="nav-scrim" onClick={() => setNavOpen(false)} />}
+
       <aside className="sidebar">
-        <div className="brand">Navigator</div>
+        <div className="brand"><span className="brand-name">Navigator</span></div>
         <Section className="rooms" focusKey="rooms">
           {Object.entries(floors).map(([floor, frooms]) => (
             <div className="floor-group" key={floor}>
               <div className="floor-label">{floor}</div>
               {frooms.map((r) => (
-                <Tile
-                  key={r.id}
-                  className="room"
-                  icon={<DoorOpen size={20} strokeWidth={1.75} />}
-                  label={r.name}
-                  active={room?.id === r.id}
-                  onEnter={() => openRoom(r.id)}
-                />
+                <Tile key={r.id} className="room" icon={<DoorOpen size={20} strokeWidth={1.75} />}
+                  label={r.name} active={room?.id === r.id} onEnter={() => openRoom(r.id)} />
               ))}
             </div>
           ))}
@@ -133,19 +161,23 @@ export function App() {
       <main className="main">
         <header className="topbar">
           <div className="title">
-            <h1>{room?.name ?? 'Control4 Navigator'}</h1>
-            <div className="subtitle">{room ? `${count} ${menu} ${noun}` : ''}</div>
+            <button className="rooms-btn" onClick={revealRooms} title="Rooms" aria-label="Rooms">
+              <PanelLeft size={22} />
+            </button>
+            <div>
+              <h1>{room?.name ?? 'Control4 Navigator'}</h1>
+              <div className="subtitle">{room ? `${count} ${menu}` : ''}</div>
+            </div>
           </div>
           <div className="topright">
             {navRoomName && <span className="pill nav">{navRoomName}</span>}
             {ack && <span className="pill ack">{ack}</span>}
-            <span className={`pill ${connected ? 'ok' : 'bad'}`}>{connected ? 'Linked' : 'Offline'}</span>
             <Clock />
           </div>
         </header>
 
         <Section className="tabs" focusKey="menus">
-          {MENUS.map((m) => (
+          {availableMenus.map((m) => (
             <Tile key={m} className="tab" icon={<ExperienceIcon menu={m} size={22} />} label={m}
               active={m === menu} onEnter={() => { setMenu(m); setOpenId(null) }} />
           ))}
@@ -154,41 +186,24 @@ export function App() {
         {openDev ? (
           <ControlPanel dev={openDev} cmd={cmd} onBack={() => backRef.current()} />
         ) : (
-          <div className="content">
-            {favSources.length > 0 && (
-              <section className="fav">
-                <div className="section-label"><Star size={16} strokeWidth={2} /> Favorites</div>
-                <Section className="grid" focusKey="favorites">
-                  {favSources.map((s) => (
-                    <Tile key={`f${s.id}`} icon={<SourceIcon kind={s.kind} />} label={s.name}
-                      sub={sourceKind(s.kind)} active={activeId === s.id} onEnter={() => selectSource(room!, s)} />
-                  ))}
-                </Section>
-              </section>
-            )}
-            <section>
-              {favSources.length > 0 && <div className="section-label">{isAV(menu) ? `All ${menu}` : menu}</div>}
-              <Section className="grid" focusKey="devices">
-                {isAV(menu)
-                  ? sources.map((s) => (
-                      <Tile key={s.id} icon={<SourceIcon kind={s.kind} />} label={s.name}
-                        sub={sourceKind(s.kind)} active={activeId === s.id} onEnter={() => selectSource(room!, s)} />
-                    ))
-                  : menuDevices.map((d) => (
-                      <Tile key={d.id} icon={<DeviceIcon proxy={d.proxy} />} label={d.name}
-                        sub={deviceKind(d.proxy)} onEnter={() => openDevice(d)} />
-                    ))}
-                {count === 0 && <div className="empty">Nothing under {menu} in this room.</div>}
-              </Section>
-            </section>
-          </div>
+          <Section className="grid" focusKey="devices">
+            {isAV(menu)
+              ? sources.map((s) => (
+                  <Tile key={s.id} className="src" icon={<C4Icon path={s.icon} fallback={<SourceIcon kind={s.kind} size={46} />} />}
+                    label={s.name} active={activeId === s.id} onEnter={() => selectSource(room!, s)} />
+                ))
+              : menuDevices.map((d) => (
+                  <Tile key={d.id} className="src" icon={<C4Icon path={d.icon} fallback={<DeviceIcon proxy={d.proxy} size={46} />} />}
+                    label={d.name} onEnter={() => openDevice(d)} />
+                ))}
+            {count === 0 && <div className="empty">Nothing under {menu} in this room.</div>}
+          </Section>
         )}
       </main>
 
       {room && (() => {
         const np = room.now_playing
         const playing = npName != null
-        const title = np.title || npName || room.name
         const sub: string[] = []
         if (np.artist) sub.push(np.artist)
         else if (np.app) sub.push(np.app)
@@ -201,10 +216,13 @@ export function App() {
         return (
           <footer className="nowplaying">
             <div className="np-info">
-              {np.art_url && <img className="np-art" src={np.art_url} alt="" />}
+              {playing && (np.art_url || npItem?.icon) && (
+                <img className="np-art" alt="" src={np.art_url || `/c4icon/${npItem!.icon}`}
+                  onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none' }} />
+              )}
               <div>
                 <div className="np-eyebrow">{playing ? 'Now Playing' : 'Room'}</div>
-                <div className="np-title">{playing ? title : room.name}</div>
+                <div className="np-title">{playing ? np.title || npName : room.name}</div>
                 <div className="np-sub">{playing ? sub.join(' · ') : room.power_on ? 'On' : 'Off'}</div>
               </div>
             </div>
@@ -237,7 +255,7 @@ function ControlPanel({
     <div className="panel">
       <Section className="panel-actions" focusKey="panel">
         <Tile className="ctl" icon={<ChevronLeft size={22} />} label="Back" onEnter={onBack} />
-        <div className="panel-title"><DeviceIcon proxy={dev.proxy} size={28} /> {dev.name}<span className="panel-proxy">{deviceKind(dev.proxy)}</span></div>
+        <div className="panel-title"><DeviceIcon proxy={dev.proxy} size={28} /> {dev.name}</div>
         {(m === 'Watch' || m === 'Listen') && (
           <>
             <Tile className="ctl" icon={<SkipBack size={22} />} onEnter={() => cmd(dev.id, 'SKIP_REV')} />
@@ -266,7 +284,6 @@ function ControlPanel({
           </>
         )}
       </Section>
-      <p className="panel-note">Commands go to Control4 via the REST API; some proxy commands vary by driver.</p>
     </div>
   )
 }
