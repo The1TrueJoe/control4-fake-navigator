@@ -82,20 +82,3 @@ function useStateNow(): [Date, (d: Date) => void] {
   }, [])
   return [now, setNow]
 }
-
-/** Simple inline glyphs (no icon dependency). */
-export const Glyph: Record<string, React.ReactNode> = {
-  Watch: '▶',
-  Listen: '♪',
-  Lighting: '☀',
-  Comfort: '❄',
-  Security: '⚿',
-  Shades: '▤',
-  Cameras: '◉',
-  room: '⌂',
-  off: '⏻',
-  volDown: '−',
-  volUp: '+',
-  mute: '🔇',
-  back: '‹',
-}

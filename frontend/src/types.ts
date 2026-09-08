@@ -18,17 +18,28 @@ export interface NowPlaying {
   source_device?: number | null
 }
 
+// A selectable Watch/Listen source (from /rooms/:id/media) — not 1:1 with a proxy.
+export interface Source {
+  id: number
+  name: string
+  kind: string // HDMI, RF_MINI_APP, STEREO, DIGITAL_AUDIO_SERVER, COMPONENT, ...
+  audio_video: boolean
+}
+
 export interface Room {
   id: number
   name: string
   floor?: string | null
   devices: Record<string, Device>
+  watch?: Source[]
+  listen?: Source[]
   current_video_device?: number | null
   current_audio_device?: number | null
   volume?: number | null
   is_muted: boolean
   power_on: boolean
   now_playing: NowPlaying
+  favorites?: number[]
 }
 
 export interface Project {
@@ -68,6 +79,32 @@ export interface CommandMsg {
 
 export function proxyName(p: ProxyKind): string {
   return typeof p === 'string' ? p : p.other
+}
+
+// Friendly, human label for a proxy (subtitle in the UI — never the raw driver id).
+const KIND: Record<string, string> = {
+  tv: 'TV', cable: 'Cable', rf_cable: 'Cable', satellite: 'Satellite', dvd: 'Player',
+  media_player: 'Source', media_service: 'App', receiver: 'Receiver',
+  amplifier: 'Amplifier', avswitch: 'Switch', av_switch: 'Switch', tuner: 'Tuner',
+  light: 'Light', light_v2: 'Light', thermostat: 'Thermostat', lock: 'Lock',
+  blind: 'Shade', camera: 'Camera', fan: 'Fan', pool: 'Pool',
+  uidevice: 'Touchscreen', ui_device: 'Touchscreen', controller: 'Controller',
+  intercomproxy: 'Intercom', control4_sr250: 'Remote',
+}
+export function deviceKind(p: ProxyKind): string {
+  const n = proxyName(p)
+  return KIND[n] ?? n.replace(/_/g, ' ')
+}
+
+// Friendly label for a Control4 media-source `kind` string.
+const SRC_KIND: Record<string, string> = {
+  RF_MINI_APP: 'App', HDMI: 'HDMI', COMPONENT: 'Input', STEREO: 'Stereo',
+  VIDEO_SELECTION: 'TV', AUDIO_SELECTION: 'Audio', DIGITAL_AUDIO_SERVER: 'Streaming',
+  DIGITAL_AUDIO_CLIENT: 'Audio', SPECIAL_AUDIO: 'Audio', RF_FM: 'FM Radio',
+  RF_AM: 'AM Radio', UIButton: 'Input',
+}
+export function sourceKind(kind: string): string {
+  return SRC_KIND[kind] ?? kind.replace(/_/g, ' ').toLowerCase()
 }
 
 // Which navigator menu a proxy belongs under (mirrors lib menu_for_proxy).

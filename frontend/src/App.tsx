@@ -1,11 +1,23 @@
 import { useEffect, useRef, useState } from 'react'
 import { setFocus } from '@noriginmedia/norigin-spatial-navigation'
-import type { Project, NavigatorState, ServerMsg, Room, Device, Menu, CommandMsg } from './types'
-import { menuFor, proxyName } from './types'
+import type { Project, NavigatorState, ServerMsg, Room, Device, Source, Menu, CommandMsg } from './types'
+import { menuFor, deviceKind, sourceKind } from './types'
 import { handleC4Key } from './nav'
-import { Tile, Section, Clock, Glyph, cx } from './ui'
+import { Tile, Section, Clock } from './ui'
+import {
+  ExperienceIcon, DeviceIcon, SourceIcon, DoorOpen, Star, Volume1, Volume2, VolumeX, Power,
+  ChevronLeft, SkipBack, Play, Pause, SkipForward, Stop,
+} from './icons'
 
 const MENUS: Menu[] = ['Watch', 'Listen', 'Lighting', 'Comfort', 'Security', 'Shades', 'Cameras']
+const isAV = (m: Menu) => m === 'Watch' || m === 'Listen'
+
+// Name of a selected/now-playing id, resolved across the room's sources + devices.
+function nameOf(room: Room | undefined, id: number | null | undefined): string | undefined {
+  if (!room || id == null) return undefined
+  const s = [...(room.watch ?? []), ...(room.listen ?? [])].find((x) => x.id === id)
+  return s?.name ?? room.devices[id]?.name
+}
 
 export function App() {
   const [project, setProject] = useState<Project>({ rooms: {}, devices: {} })
@@ -25,7 +37,6 @@ export function App() {
   const room: Room | undefined = roomId != null ? project.rooms[roomId] : rooms[0]
   const openDev = room && openId != null ? room.devices[openId] : undefined
 
-  // Back: close a device panel, else no-op (sidebar stays).
   const backRef = useRef<() => void>(() => {})
   backRef.current = () => {
     if (openId != null) {
@@ -42,43 +53,48 @@ export function App() {
     ws.onclose = () => setConnected(false)
     ws.onmessage = (e) => {
       const m: ServerMsg = JSON.parse(e.data)
-      if (m.type === 'snapshot') {
-        setProject(m.project)
-        setNav(m.nav)
-      } else if (m.type === 'nav') {
-        setNav(m.nav)
-      } else if (m.type === 'command_ack') {
-        setAck(m.ok ? `✓ ${m.command}` : `✗ ${m.command}`)
+      if (m.type === 'snapshot') { setProject(m.project); setNav(m.nav) }
+      else if (m.type === 'nav') setNav(m.nav)
+      else if (m.type === 'command_ack') {
+        setAck(m.ok ? `${m.command}` : `${m.command} failed`)
         setTimeout(() => setAck(null), 2200)
       } else if (m.type === 'event') {
         const ev = m.event
         if (ev.kind === 'nav' && ev.key) handleC4Key(ev.key, () => backRef.current())
         else if (ev.kind === 'enter_navigation' && ev.room != null) {
-          setRoomId(ev.room)
-          setOpenId(null)
-          setTimeout(() => setFocus('devices'), 0)
+          setRoomId(ev.room); setOpenId(null); setTimeout(() => setFocus('devices'), 0)
         }
       }
     }
     return () => ws.close()
   }, [])
 
-  const openRoom = (id: number) => {
-    setRoomId(id)
-    setOpenId(null)
-    setTimeout(() => setFocus('devices'), 0)
-  }
-  const activate = (r: Room, d: Device) => {
-    const m = menuFor(d.proxy)
-    if (m === 'Watch' || m === 'Listen') {
-      cmd(r.id, m === 'Listen' ? 'SELECT_AUDIO_DEVICE' : 'SELECT_VIDEO_DEVICE', { deviceid: d.id })
-    }
-    setOpenId(d.id)
-    setTimeout(() => setFocus('panel'), 0)
-  }
+  const openRoom = (id: number) => { setRoomId(id); setOpenId(null); setTimeout(() => setFocus('devices'), 0) }
+
+  // Selecting a Watch/Listen source routes the room to it (the select IS the action).
+  const selectSource = (r: Room, s: Source) =>
+    cmd(r.id, menu === 'Listen' ? 'SELECT_AUDIO_DEVICE' : 'SELECT_VIDEO_DEVICE', { deviceid: s.id })
+  // Opening a controllable device (lights/shades/locks/…) shows its control panel.
+  const openDevice = (d: Device) => { setOpenId(d.id); setTimeout(() => setFocus('panel'), 0) }
 
   const navRoomName = nav.navigating_room != null ? project.rooms[nav.navigating_room]?.name : undefined
-  const devices = room ? Object.values(room.devices).filter((d) => menuFor(d.proxy) === menu) : []
+
+  // Current menu contents: sources for Watch/Listen, proxy devices otherwise.
+  const sources: Source[] = room ? (menu === 'Watch' ? room.watch ?? [] : menu === 'Listen' ? room.listen ?? [] : []) : []
+  const menuDevices = room && !isAV(menu) ? Object.values(room.devices).filter((d) => menuFor(d.proxy) === menu) : []
+  const favSet = new Set(room?.favorites ?? [])
+  const favSources = sources.filter((s) => favSet.has(s.id))
+  const count = isAV(menu) ? sources.length : menuDevices.length
+  const noun = isAV(menu) ? `source${count === 1 ? '' : 's'}` : `device${count === 1 ? '' : 's'}`
+
+  // Currently-selected source id for this menu (for the active highlight + now playing).
+  const activeId = room ? (menu === 'Listen' ? room.current_audio_device : menu === 'Watch' ? room.current_video_device : null) ?? null : null
+  const npId = room ? room.now_playing.source_device ?? room.current_video_device ?? room.current_audio_device ?? null : null
+  const npName = nameOf(room, npId)
+
+  // rooms grouped by floor for the sidebar
+  const floors: Record<string, Room[]> = {}
+  for (const r of rooms) (floors[r.floor || 'Rooms'] ||= []).push(r)
 
   return (
     <div className="app">
@@ -86,16 +102,20 @@ export function App() {
       <aside className="sidebar">
         <div className="brand">Navigator</div>
         <Section className="rooms" focusKey="rooms">
-          {rooms.map((r) => (
-            <Tile
-              key={r.id}
-              className="room"
-              icon={Glyph.room}
-              label={r.name}
-              sub={r.floor ?? undefined}
-              active={room?.id === r.id}
-              onEnter={() => openRoom(r.id)}
-            />
+          {Object.entries(floors).map(([floor, frooms]) => (
+            <div className="floor-group" key={floor}>
+              <div className="floor-label">{floor}</div>
+              {frooms.map((r) => (
+                <Tile
+                  key={r.id}
+                  className="room"
+                  icon={<DoorOpen size={20} strokeWidth={1.75} />}
+                  label={r.name}
+                  active={room?.id === r.id}
+                  onEnter={() => openRoom(r.id)}
+                />
+              ))}
+            </div>
           ))}
           {rooms.length === 0 && <div className="empty">connecting…</div>}
         </Section>
@@ -105,58 +125,72 @@ export function App() {
         <header className="topbar">
           <div className="title">
             <h1>{room?.name ?? 'Control4 Navigator'}</h1>
-            <div className="subtitle">{room ? `${devices.length} in ${menu}` : ''}</div>
+            <div className="subtitle">{room ? `${count} ${menu} ${noun}` : ''}</div>
           </div>
           <div className="topright">
-            {navRoomName && <span className="pill nav">◉ {navRoomName}</span>}
+            {navRoomName && <span className="pill nav">{navRoomName}</span>}
             {ack && <span className="pill ack">{ack}</span>}
-            <span className={cx('pill', connected ? 'ok' : 'bad')}>{connected ? 'linked' : 'offline'}</span>
+            <span className={`pill ${connected ? 'ok' : 'bad'}`}>{connected ? 'Linked' : 'Offline'}</span>
             <Clock />
           </div>
         </header>
 
         <Section className="tabs" focusKey="menus">
           {MENUS.map((m) => (
-            <Tile key={m} className="tab" icon={Glyph[m]} label={m} active={m === menu} onEnter={() => { setMenu(m); setOpenId(null) }} />
+            <Tile key={m} className="tab" icon={<ExperienceIcon menu={m} size={22} />} label={m}
+              active={m === menu} onEnter={() => { setMenu(m); setOpenId(null) }} />
           ))}
         </Section>
 
         {openDev ? (
-          <ControlPanel room={room!} dev={openDev} cmd={cmd} onBack={() => backRef.current()} />
+          <ControlPanel dev={openDev} cmd={cmd} onBack={() => backRef.current()} />
         ) : (
-          <Section className="grid" focusKey="devices">
-            {devices.map((d) => (
-              <Tile
-                key={d.id}
-                label={d.name}
-                sub={proxyName(d.proxy)}
-                active={room!.now_playing.source_device === d.id}
-                onEnter={() => activate(room!, d)}
-              />
-            ))}
-            {devices.length === 0 && <div className="empty">Nothing under {menu} in this room.</div>}
-          </Section>
+          <div className="content">
+            {favSources.length > 0 && (
+              <section className="fav">
+                <div className="section-label"><Star size={16} strokeWidth={2} /> Favorites</div>
+                <Section className="grid" focusKey="favorites">
+                  {favSources.map((s) => (
+                    <Tile key={`f${s.id}`} icon={<SourceIcon kind={s.kind} />} label={s.name}
+                      sub={sourceKind(s.kind)} active={activeId === s.id} onEnter={() => selectSource(room!, s)} />
+                  ))}
+                </Section>
+              </section>
+            )}
+            <section>
+              {favSources.length > 0 && <div className="section-label">{isAV(menu) ? `All ${menu}` : menu}</div>}
+              <Section className="grid" focusKey="devices">
+                {isAV(menu)
+                  ? sources.map((s) => (
+                      <Tile key={s.id} icon={<SourceIcon kind={s.kind} />} label={s.name}
+                        sub={sourceKind(s.kind)} active={activeId === s.id} onEnter={() => selectSource(room!, s)} />
+                    ))
+                  : menuDevices.map((d) => (
+                      <Tile key={d.id} icon={<DeviceIcon proxy={d.proxy} />} label={d.name}
+                        sub={deviceKind(d.proxy)} onEnter={() => openDevice(d)} />
+                    ))}
+                {count === 0 && <div className="empty">Nothing under {menu} in this room.</div>}
+              </Section>
+            </section>
+          </div>
         )}
       </main>
 
       {room && (
         <footer className="nowplaying">
           <div className="np-info">
-            <div className="np-label">{room.name}</div>
+            <div className="np-eyebrow">{npName ? 'Now Playing' : 'Room'}</div>
+            <div className="np-title">{npName ?? room.name}</div>
             <div className="np-sub">
-              {room.power_on ? 'On' : 'Off'}
-              {room.now_playing.source_device != null && room.devices[room.now_playing.source_device]
-                ? ` · ${room.devices[room.now_playing.source_device].name}`
-                : ''}
-              {room.volume != null ? ` · Vol ${room.volume}` : ''}
-              {room.is_muted ? ' · Muted' : ''}
+              {npName ? room.name : room.power_on ? 'On' : 'Off'}
+              {room.volume != null ? ` · Vol ${room.volume}` : ''}{room.is_muted ? ' · Muted' : ''}
             </div>
           </div>
           <Section className="np-controls" focusKey="controls">
-            <Tile className="ctl" label={Glyph.volDown as string} onEnter={() => cmd(room.id, 'PULSE_VOL_DOWN')} />
-            <Tile className="ctl" label={room.is_muted ? '🔈' : (Glyph.mute as string)} onEnter={() => cmd(room.id, 'MUTE_TOGGLE')} />
-            <Tile className="ctl" label={Glyph.volUp as string} onEnter={() => cmd(room.id, 'PULSE_VOL_UP')} />
-            <Tile className="ctl off" label="Off" onEnter={() => cmd(room.id, 'ROOM_OFF')} />
+            <Tile className="ctl" icon={<Volume1 size={22} />} onEnter={() => cmd(room.id, 'PULSE_VOL_DOWN')} />
+            <Tile className="ctl" icon={room.is_muted ? <VolumeX size={22} /> : <Volume2 size={22} />} onEnter={() => cmd(room.id, 'MUTE_TOGGLE')} />
+            <Tile className="ctl" icon={<Volume2 size={22} />} onEnter={() => cmd(room.id, 'PULSE_VOL_UP')} />
+            <Tile className="ctl off" icon={<Power size={22} />} label="Off" onEnter={() => cmd(room.id, 'ROOM_OFF')} />
           </Section>
         </footer>
       )}
@@ -165,12 +199,8 @@ export function App() {
 }
 
 function ControlPanel({
-  room,
-  dev,
-  cmd,
-  onBack,
+  dev, cmd, onBack,
 }: {
-  room: Room
   dev: Device
   cmd: (item: number, command: string, params?: Record<string, unknown>) => void
   onBack: () => void
@@ -179,36 +209,27 @@ function ControlPanel({
   return (
     <div className="panel">
       <Section className="panel-actions" focusKey="panel">
-        <Tile className="ctl" label={`${Glyph.back as string} Back`} onEnter={onBack} />
-        <div className="panel-title">{dev.name}<span className="panel-proxy">{proxyName(dev.proxy)}</span></div>
+        <Tile className="ctl" icon={<ChevronLeft size={22} />} label="Back" onEnter={onBack} />
+        <div className="panel-title"><DeviceIcon proxy={dev.proxy} size={28} /> {dev.name}<span className="panel-proxy">{deviceKind(dev.proxy)}</span></div>
+        {(m === 'Watch' || m === 'Listen') && (
+          <>
+            <Tile className="ctl" icon={<SkipBack size={22} />} onEnter={() => cmd(dev.id, 'SKIP_REV')} />
+            <Tile className="ctl" icon={<Play size={22} />} onEnter={() => cmd(dev.id, 'PLAY')} />
+            <Tile className="ctl" icon={<Pause size={22} />} onEnter={() => cmd(dev.id, 'PAUSE')} />
+            <Tile className="ctl" icon={<SkipForward size={22} />} onEnter={() => cmd(dev.id, 'SKIP_FWD')} />
+            <Tile className="ctl" icon={<Stop size={22} />} onEnter={() => cmd(dev.id, 'STOP')} />
+          </>
+        )}
         {m === 'Lighting' && (
           <>
             <Tile className="ctl" label="On" onEnter={() => cmd(dev.id, 'ON')} />
             <Tile className="ctl" label="Off" onEnter={() => cmd(dev.id, 'OFF')} />
-            <Tile className="ctl" label="Dim −" onEnter={() => cmd(dev.id, 'BUTTON_ACTION', { BUTTON_ID: 1, ACTION: 2 })} />
-            <Tile className="ctl" label="Dim +" onEnter={() => cmd(dev.id, 'BUTTON_ACTION', { BUTTON_ID: 0, ACTION: 2 })} />
-          </>
-        )}
-        {(m === 'Watch' || m === 'Listen') && (
-          <>
-            <Tile className="ctl" label="⏮" onEnter={() => cmd(dev.id, 'SKIP_REV')} />
-            <Tile className="ctl" label="⏯" onEnter={() => cmd(dev.id, 'PLAY')} />
-            <Tile className="ctl" label="⏸" onEnter={() => cmd(dev.id, 'PAUSE')} />
-            <Tile className="ctl" label="⏭" onEnter={() => cmd(dev.id, 'SKIP_FWD')} />
-            <Tile className="ctl" label="⏹" onEnter={() => cmd(dev.id, 'STOP')} />
-          </>
-        )}
-        {m === 'Comfort' && (
-          <>
-            <Tile className="ctl" label="Cooler" onEnter={() => cmd(dev.id, 'DECREMENT_SETPOINT_COOL')} />
-            <Tile className="ctl" label="Warmer" onEnter={() => cmd(dev.id, 'INCREMENT_SETPOINT_HEAT')} />
           </>
         )}
         {m === 'Shades' && (
           <>
             <Tile className="ctl" label="Open" onEnter={() => cmd(dev.id, 'OPEN')} />
             <Tile className="ctl" label="Close" onEnter={() => cmd(dev.id, 'CLOSE')} />
-            <Tile className="ctl" label="Stop" onEnter={() => cmd(dev.id, 'STOP')} />
           </>
         )}
         {m === 'Security' && (
@@ -218,10 +239,7 @@ function ControlPanel({
           </>
         )}
       </Section>
-      <p className="panel-note">
-        Commands are sent to this device via the Control4 REST API. Some proxy command
-        names/params may vary by driver — tune in <code>ControlPanel</code>.
-      </p>
+      <p className="panel-note">Commands go to Control4 via the REST API; some proxy commands vary by driver.</p>
     </div>
   )
 }
