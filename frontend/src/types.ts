@@ -16,6 +16,9 @@ export interface NowPlaying {
   album?: string | null
   art_url?: string | null
   source_device?: number | null
+  app?: string | null
+  state?: string | null
+  transports?: string[]
 }
 
 // A selectable Watch/Listen source (from /rooms/:id/media) — not 1:1 with a proxy.

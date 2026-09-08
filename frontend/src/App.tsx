@@ -12,6 +12,15 @@ import {
 const MENUS: Menu[] = ['Watch', 'Listen', 'Lighting', 'Comfort', 'Security', 'Shades', 'Cameras']
 const isAV = (m: Menu) => m === 'Watch' || m === 'Listen'
 
+// Transport buttons, shown when the selected source lists them in TRANSPORTS_SUPPORTED.
+const TRANSPORTS = [
+  { key: 'SCAN_REV', cmd: 'SCAN_REV', Icon: SkipBack },
+  { key: 'PLAY', cmd: 'PLAY', Icon: Play },
+  { key: 'PAUSE', cmd: 'PAUSE', Icon: Pause },
+  { key: 'STOP', cmd: 'STOP', Icon: Stop },
+  { key: 'SCAN_FWD', cmd: 'SCAN_FWD', Icon: SkipForward },
+] as const
+
 // Name of a selected/now-playing id, resolved across the room's sources + devices.
 function nameOf(room: Room | undefined, id: number | null | undefined): string | undefined {
   if (!room || id == null) return undefined
@@ -176,24 +185,42 @@ export function App() {
         )}
       </main>
 
-      {room && (
-        <footer className="nowplaying">
-          <div className="np-info">
-            <div className="np-eyebrow">{npName ? 'Now Playing' : 'Room'}</div>
-            <div className="np-title">{npName ?? room.name}</div>
-            <div className="np-sub">
-              {npName ? room.name : room.power_on ? 'On' : 'Off'}
-              {room.volume != null ? ` · Vol ${room.volume}` : ''}{room.is_muted ? ' · Muted' : ''}
+      {room && (() => {
+        const np = room.now_playing
+        const playing = npName != null
+        const title = np.title || npName || room.name
+        const sub: string[] = []
+        if (np.artist) sub.push(np.artist)
+        else if (np.app) sub.push(np.app)
+        sub.push(room.name)
+        if (np.state) sub.push(np.state)
+        if (room.volume != null && room.volume >= 0) sub.push(`Vol ${room.volume}`)
+        if (room.is_muted) sub.push('Muted')
+        const tset = new Set(np.transports ?? [])
+        const transports = TRANSPORTS.filter((t) => tset.has(t.key))
+        return (
+          <footer className="nowplaying">
+            <div className="np-info">
+              {np.art_url && <img className="np-art" src={np.art_url} alt="" />}
+              <div>
+                <div className="np-eyebrow">{playing ? 'Now Playing' : 'Room'}</div>
+                <div className="np-title">{playing ? title : room.name}</div>
+                <div className="np-sub">{playing ? sub.join(' · ') : room.power_on ? 'On' : 'Off'}</div>
+              </div>
             </div>
-          </div>
-          <Section className="np-controls" focusKey="controls">
-            <Tile className="ctl" icon={<Volume1 size={22} />} onEnter={() => cmd(room.id, 'PULSE_VOL_DOWN')} />
-            <Tile className="ctl" icon={room.is_muted ? <VolumeX size={22} /> : <Volume2 size={22} />} onEnter={() => cmd(room.id, 'MUTE_TOGGLE')} />
-            <Tile className="ctl" icon={<Volume2 size={22} />} onEnter={() => cmd(room.id, 'PULSE_VOL_UP')} />
-            <Tile className="ctl off" icon={<Power size={22} />} label="Off" onEnter={() => cmd(room.id, 'ROOM_OFF')} />
-          </Section>
-        </footer>
-      )}
+            <Section className="np-controls" focusKey="controls">
+              {playing && np.source_device != null && transports.map((t) => (
+                <Tile key={t.key} className="ctl" icon={<t.Icon size={22} />}
+                  onEnter={() => cmd(np.source_device!, t.cmd)} />
+              ))}
+              <Tile className="ctl" icon={<Volume1 size={22} />} onEnter={() => cmd(room.id, 'PULSE_VOL_DOWN')} />
+              <Tile className="ctl" icon={room.is_muted ? <VolumeX size={22} /> : <Volume2 size={22} />} onEnter={() => cmd(room.id, 'MUTE_TOGGLE')} />
+              <Tile className="ctl" icon={<Volume2 size={22} />} onEnter={() => cmd(room.id, 'PULSE_VOL_UP')} />
+              <Tile className="ctl off" icon={<Power size={22} />} label="Off" onEnter={() => cmd(room.id, 'ROOM_OFF')} />
+            </Section>
+          </footer>
+        )
+      })()}
     </div>
   )
 }

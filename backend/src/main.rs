@@ -289,6 +289,26 @@ fn sync_project(api: &dyn c4::ProjectSource, state: &AppState) {
                         c4::apply_room_variables(room, &vars);
                     }
                 }
+                // Now-playing: if the room is on with a selected source, fold that
+                // device's own variables in; otherwise clear stale metadata.
+                let sel = project
+                    .rooms
+                    .get(&rid)
+                    .and_then(|r| r.power_on.then_some(r.now_playing.source_device).flatten());
+                match sel {
+                    Some(dev) => {
+                        if let Ok(dvars) = c4::load_room_variables(api, dev) {
+                            if let Some(room) = project.rooms.get_mut(&rid) {
+                                c4::apply_now_playing(room, &dvars);
+                            }
+                        }
+                    }
+                    None => {
+                        if let Some(room) = project.rooms.get_mut(&rid) {
+                            c4::clear_now_playing(room);
+                        }
+                    }
+                }
             }
             *state.project.write().unwrap() = project.clone();
             let nav = state.nav.read().unwrap().clone();
