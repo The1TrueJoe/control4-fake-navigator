@@ -161,7 +161,10 @@ async fn main() {
     let web_dir = env_or("WEB_DIR", "../frontend/dist");
 
     let (tx, _rx) = broadcast::channel::<ServerMsg>(256);
-    let creds = (std::env::var("C4_HOST").ok(), std::env::var("C4_TOKEN").ok());
+    // docker-compose passes `${C4_HOST:-}` as an empty string when no .env is set,
+    // and copy/paste often leaves quotes or a trailing newline — treat all of those
+    // as "unset" so we cleanly fall back to demo mode instead of erroring.
+    let creds = (env_clean("C4_HOST"), env_clean("C4_TOKEN"));
     let cmd_tx = match creds {
         (Some(host), Some(token)) => {
             let (ctx, crx) = mpsc::channel::<CmdReq>();
@@ -202,6 +205,15 @@ async fn main() {
 
 fn env_or(k: &str, d: &str) -> String {
     std::env::var(k).unwrap_or_else(|_| d.to_string())
+}
+
+/// Read an env var, trim whitespace and surrounding quotes, and return `None` if
+/// the result is empty (so `${VAR:-}` / blank .env values behave as unset).
+fn env_clean(k: &str) -> Option<String> {
+    std::env::var(k).ok().and_then(|v| {
+        let s = v.trim().trim_matches(['"', '\'']).trim().to_string();
+        (!s.is_empty()).then_some(s)
+    })
 }
 
 fn spawn_sink(state: AppState, addr: String) {
