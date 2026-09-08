@@ -327,41 +327,15 @@ fn spawn_control(state: AppState, host: String, token: String, rx: mpsc::Receive
 }
 
 fn sync_project(api: &dyn c4::ProjectSource, state: &AppState) {
-    match c4::load_project(api) {
-        Ok(mut project) => {
-            let room_ids: Vec<u32> = project.rooms.keys().copied().collect();
-            for rid in room_ids {
-                if let Ok(vars) = c4::load_room_variables(api, rid) {
-                    if let Some(room) = project.rooms.get_mut(&rid) {
-                        c4::apply_room_variables(room, &vars);
-                    }
-                }
-                // Now-playing: if the room is on with a selected source, fold that
-                // device's own variables in; otherwise clear stale metadata.
-                let sel = project
-                    .rooms
-                    .get(&rid)
-                    .and_then(|r| r.power_on.then_some(r.now_playing.source_device).flatten());
-                match sel {
-                    Some(dev) => {
-                        if let Ok(dvars) = c4::load_room_variables(api, dev) {
-                            if let Some(room) = project.rooms.get_mut(&rid) {
-                                c4::apply_now_playing(room, &dvars);
-                            }
-                        }
-                    }
-                    None => {
-                        if let Some(room) = project.rooms.get_mut(&rid) {
-                            c4::clear_now_playing(room);
-                        }
-                    }
-                }
-            }
+    // The lib owns all data shaping: one call returns the fully-populated live
+    // project (structure + variables + now-playing). The backend only transports it.
+    match c4::load_live_project(api) {
+        Ok(project) => {
             *state.project.write().unwrap() = project.clone();
             let nav = state.nav.read().unwrap().clone();
             let _ = state.tx.send(ServerMsg::Snapshot { project, nav });
         }
-        Err(e) => eprintln!("[sync] load_project: {e}"),
+        Err(e) => eprintln!("[sync] load_live_project: {e}"),
     }
 }
 
