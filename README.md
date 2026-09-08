@@ -85,9 +85,14 @@ cd frontend && npm install && npm run dev    # http://localhost:5173, proxies to
 | `WEB_DIR` | `../frontend/dist` | Built React app. |
 
 ### Getting `C4_TOKEN`
-The REST API needs a Bearer JWT (`POST /api/v1/localjwt`, client-cert gated). See
-`lib/docs/navigator-data-model.md` → "Auth". Without it the UI still runs and shows
-live nav from the driver; rooms/devices populate once the token is set.
+The REST API needs a Bearer JWT (`POST /api/v1/localjwt`, client-cert gated). Mint one:
+```sh
+C4_SSH_PASS='<controller root pw>' ./scripts/mint-token.sh --env   # writes .env
+# or: C4_SSH_KEY=~/.ssh/ea3_key ./scripts/mint-token.sh --env
+```
+It SSHes to the controller and mints via the on-box `localjwt` header trick (see
+`lib/docs/navigator-data-model.md` → "Auth"). The JWT lasts ~24h — re-run to refresh.
+Without a token the UI still runs in demo mode and shows live nav from the driver.
 
 ## Status
 End-to-end proven: driver relay → sink → backend → websocket → UI, room-aware, remote-driven.
