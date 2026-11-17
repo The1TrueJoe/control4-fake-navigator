@@ -1,7 +1,8 @@
 //! control4-fake-navigator backend.
 //!
 //! - Sink server: receives nav keys relayed by the on-screen DriverWorks driver.
-//! - REST live-sync: loads the Control4 project + room state (Strategy A).
+//! - REST live-sync: loads the Control4 project + room state (Strategy A), with the
+//!   token the driver mints on the controller (`auth` frame) — or C4_HOST/C4_TOKEN.
 //! - Websocket: streams snapshot + nav events + state to the React UI.
 //! - Reverse channel: UI actions -> Control4 commands (`POST /items/:id/commands`).
 //!
@@ -9,7 +10,7 @@
 //! inside the tokio runtime (reqwest::blocking panics there). The ws handler submits
 //! commands to that thread over a channel.
 //!
-//! Env: C4_HOST, C4_TOKEN, SINK_ADDR (0.0.0.0:9010), HTTP_ADDR (0.0.0.0:8080), WEB_DIR.
+//! Env: C4_HOST, C4_TOKEN (optional; the driver supplies them), SINK_ADDR (0.0.0.0:9010), HTTP_ADDR (0.0.0.0:8080), WEB_DIR.
 
 use axum::extract::ws::{Message, WebSocket, WebSocketUpgrade};
 use axum::extract::{Path, State};
@@ -49,6 +50,20 @@ struct CmdReq {
     item: u32,
     command: String,
     params: serde_json::Value,
+}
+
+/// What the control thread is asked to do.
+enum Ctl {
+    Cmd(CmdReq),
+    /// New credentials arrived: sync now rather than at the next 15 s tick.
+    Resync,
+}
+
+/// Where the project comes from: the controller's REST base + bearer token.
+#[derive(Clone, PartialEq)]
+struct Creds {
+    host: String,
+    token: String,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -152,24 +167,25 @@ impl c4::ProjectSource for DemoSource {
 /// can `<img>` them without ever seeing the token. Uses an async client (the
 /// blocking one would panic inside axum's runtime).
 struct IconProxy {
-    base: String,
-    token: String,
+    creds: Arc<RwLock<Option<Creds>>>,
     client: reqwest::Client,
 }
 
 impl IconProxy {
-    fn new(base: String, token: String) -> Self {
+    fn new(creds: Arc<RwLock<Option<Creds>>>) -> Self {
         let client = reqwest::Client::builder()
             .danger_accept_invalid_certs(true)
             .timeout(Duration::from_secs(10))
             .build()
             .expect("icon http client");
-        Self { base, token, client }
+        Self { creds, client }
     }
 
+    /// `None` until credentials exist (demo mode), so callers fall back.
     async fn fetch(&self, path: &str) -> Option<(String, Vec<u8>)> {
-        let url = format!("{}/{}", self.base.trim_end_matches('/'), path);
-        let resp = self.client.get(&url).bearer_auth(&self.token).send().await.ok()?;
+        let Creds { host, token } = self.creds.read().unwrap().clone()?;
+        let url = format!("{}/{}", host.trim_end_matches('/'), path);
+        let resp = self.client.get(&url).bearer_auth(&token).send().await.ok()?;
         if !resp.status().is_success() {
             return None;
         }
@@ -189,8 +205,9 @@ struct AppState {
     project: Arc<RwLock<c4::Project>>,
     nav: Arc<RwLock<c4::NavigatorState>>,
     tx: broadcast::Sender<ServerMsg>,
-    cmd_tx: Option<mpsc::Sender<CmdReq>>,
-    icons: Option<Arc<IconProxy>>,
+    creds: Arc<RwLock<Option<Creds>>>,
+    ctl_tx: mpsc::Sender<Ctl>,
+    icons: Arc<IconProxy>,
 }
 
 #[tokio::main]
@@ -202,41 +219,28 @@ async fn main() {
     let (tx, _rx) = broadcast::channel::<ServerMsg>(256);
     // docker-compose passes `${C4_HOST:-}` as an empty string when no .env is set,
     // and copy/paste often leaves quotes or a trailing newline — treat all of those
-    // as "unset" so we cleanly fall back to demo mode instead of erroring.
-    let creds = (env_clean("C4_HOST"), env_clean("C4_TOKEN"));
-    // Icon proxy (live mode only) — needs its own async client, so build it from a
-    // clone of the creds before they're moved into the control thread.
-    let icons = match &creds {
-        (Some(host), Some(token)) => Some(Arc::new(IconProxy::new(host.clone(), token.clone()))),
-        _ => None,
-    };
-    let cmd_tx = match creds {
-        (Some(host), Some(token)) => {
-            let (ctx, crx) = mpsc::channel::<CmdReq>();
-            Some((host, token, ctx, crx))
-        }
+    // as "unset". Unset is normal: the driver sends a token when it connects.
+    let creds = match (env_clean("C4_HOST"), env_clean("C4_TOKEN")) {
+        (Some(host), Some(token)) => Some(Creds { host, token }),
         _ => {
-            println!("[sync] C4_HOST/C4_TOKEN unset — no project sync / reverse commands");
+            println!("[sync] C4_HOST/C4_TOKEN unset — demo project until the driver sends a token");
             None
         }
     };
+    let creds = Arc::new(RwLock::new(creds));
+    let (ctl_tx, ctl_rx) = mpsc::channel::<Ctl>();
 
     let state = AppState {
         project: Arc::new(RwLock::new(c4::Project::default())),
         nav: Arc::new(RwLock::new(c4::NavigatorState::new())),
         tx: tx.clone(),
-        cmd_tx: cmd_tx.as_ref().map(|(_, _, ctx, _)| ctx.clone()),
-        icons,
+        creds: creds.clone(),
+        ctl_tx,
+        icons: Arc::new(IconProxy::new(creds)),
     };
 
     spawn_sink(state.clone(), sink_addr.clone());
-    if let Some((host, token, _ctx, crx)) = cmd_tx {
-        spawn_control(state.clone(), host, token, crx);
-    } else {
-        // Demo mode: populate the UI from the bundled sample project.
-        sync_project(&DemoSource as &dyn c4::ProjectSource, &state);
-        println!("[demo] serving bundled sample project — set C4_HOST/C4_TOKEN for live control");
-    }
+    spawn_control(state.clone(), ctl_rx);
 
     let app = Router::new()
         .route("/ws", get(ws_handler))
@@ -273,7 +277,26 @@ fn spawn_sink(state: AppState, addr: String) {
                 return;
             }
         };
+        let mut peer = None;
         for msg in rx {
+            if let c4::SinkEvent::Connected(addr) = msg {
+                peer = Some(addr);
+                continue;
+            }
+            if let c4::SinkEvent::Event(c4::Event::Auth { token, host }) = &msg {
+                // No host: the controller the driver runs on is the one it connected from.
+                let host = host.clone().or_else(|| peer.map(|p| format!("https://{}", p.ip())));
+                if let Some(host) = host {
+                    let new = Some(Creds { host: host.clone(), token: token.clone() });
+                    let changed = *state.creds.read().unwrap() != new;
+                    *state.creds.write().unwrap() = new;
+                    if changed {
+                        println!("[sync] project token from the driver ({host})");
+                        let _ = state.ctl_tx.send(Ctl::Resync);
+                    }
+                }
+                continue;
+            }
             if let c4::SinkEvent::Event(ev) = msg {
                 let changed = state.nav.write().unwrap().apply(&ev);
                 let _ = state.tx.send(ServerMsg::Event { event: EventDto::from(&ev) });
@@ -287,20 +310,31 @@ fn spawn_sink(state: AppState, addr: String) {
 }
 
 /// The single controller-HTTP thread: builds the blocking client (outside tokio),
-/// periodically syncs the project, and executes reverse-channel commands.
-fn spawn_control(state: AppState, host: String, token: String, rx: mpsc::Receiver<CmdReq>) {
+/// periodically syncs the project, and executes reverse-channel commands. Without
+/// credentials it shows the bundled demo project and waits for the driver's token.
+fn spawn_control(state: AppState, rx: mpsc::Receiver<Ctl>) {
     std::thread::spawn(move || {
-        let api = C4Api {
-            base: host,
-            token,
-            http: reqwest::blocking::Client::builder()
-                .danger_accept_invalid_certs(true)
-                .timeout(Duration::from_secs(10))
-                .build()
-                .expect("http client"),
-        };
+        let http = reqwest::blocking::Client::builder()
+            .danger_accept_invalid_certs(true)
+            .timeout(Duration::from_secs(10))
+            .build()
+            .expect("http client");
+        let mut demo_shown = false;
         loop {
-            sync_project(&api as &dyn c4::ProjectSource, &state);
+            let api = state.creds.read().unwrap().clone().map(|c| C4Api {
+                base: c.host,
+                token: c.token,
+                http: http.clone(),
+            });
+            match &api {
+                Some(api) => sync_project(api as &dyn c4::ProjectSource, &state),
+                None if !demo_shown => {
+                    sync_project(&DemoSource as &dyn c4::ProjectSource, &state);
+                    println!("[demo] serving the bundled sample project");
+                    demo_shown = true;
+                }
+                None => {}
+            }
             // Serve commands for ~15s, then resync.
             let deadline = Instant::now() + Duration::from_secs(15);
             loop {
@@ -309,8 +343,12 @@ fn spawn_control(state: AppState, host: String, token: String, rx: mpsc::Receive
                     break;
                 }
                 match rx.recv_timeout(deadline - now) {
-                    Ok(req) => {
-                        let res = api.send_command(req.item, &req.command, &req.params);
+                    Ok(Ctl::Resync) => break,
+                    Ok(Ctl::Cmd(req)) => {
+                        let res = match &api {
+                            Some(api) => api.send_command(req.item, &req.command, &req.params),
+                            None => Err(C4Api::io("no controller yet (driver not connected)".into())),
+                        };
                         let _ = state.tx.send(ServerMsg::CommandAck {
                             ok: res.is_ok(),
                             item: req.item,
@@ -347,13 +385,10 @@ const WALLPAPER: &[u8] = include_bytes!("../demo/wallpaper.jpg");
 /// experience_300.png`. 404s in demo mode or on any fetch failure so the UI falls
 /// back to its built-in glyph.
 async fn icon_handler(State(s): State<AppState>, Path(path): Path<String>) -> impl IntoResponse {
-    let Some(icons) = s.icons.as_ref() else {
-        return StatusCode::NOT_FOUND.into_response();
-    };
     if path.contains("..") {
         return StatusCode::BAD_REQUEST.into_response();
     }
-    match icons.fetch(&path).await {
+    match s.icons.fetch(&path).await {
         Some((ctype, bytes)) => (
             [
                 (axum::http::header::CONTENT_TYPE, ctype),
@@ -374,18 +409,16 @@ async fn icon_handler(State(s): State<AppState>, Path(path): Path<String>) -> im
 /// selection isn't exposed by the controller's REST API, so it's one for now.
 /// Falls back to the bundled image in demo mode or if the fetch fails.
 async fn wallpaper_handler(State(s): State<AppState>) -> impl IntoResponse {
-    if let Some(icons) = s.icons.as_ref() {
-        let name = env_clean("C4_WALLPAPER").unwrap_or_else(|| "3.0-a-default.jpg".to_string());
-        if let Some((ctype, bytes)) = icons.fetch(&format!("wallpaper/onscreen/default/{name}")).await {
-            return (
-                [
-                    (axum::http::header::CONTENT_TYPE, ctype),
-                    (axum::http::header::CACHE_CONTROL, "public, max-age=86400".to_string()),
-                ],
-                bytes,
-            )
-                .into_response();
-        }
+    let name = env_clean("C4_WALLPAPER").unwrap_or_else(|| "3.0-a-default.jpg".to_string());
+    if let Some((ctype, bytes)) = s.icons.fetch(&format!("wallpaper/onscreen/default/{name}")).await {
+        return (
+            [
+                (axum::http::header::CONTENT_TYPE, ctype),
+                (axum::http::header::CACHE_CONTROL, "public, max-age=86400".to_string()),
+            ],
+            bytes,
+        )
+            .into_response();
     }
     (
         [
@@ -442,17 +475,5 @@ fn handle_client_msg(s: &AppState, text: &str) {
     else {
         return;
     };
-    match &s.cmd_tx {
-        Some(tx) => {
-            let _ = tx.send(CmdReq { item, command, params });
-        }
-        None => {
-            let _ = s.tx.send(ServerMsg::CommandAck {
-                ok: false,
-                item,
-                command,
-                error: Some("controller not configured (set C4_HOST/C4_TOKEN)".into()),
-            });
-        }
-    }
+    let _ = s.ctl_tx.send(Ctl::Cmd(CmdReq { item, command, params }));
 }
