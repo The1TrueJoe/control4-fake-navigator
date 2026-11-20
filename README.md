@@ -33,6 +33,9 @@ end-to-end against a real controller.
 The shared protocol/model/loader lives in the **`lib/`** submodule
 ([control4-navigator-sink-lib](lib/README.md)).
 
+On an openHC controller (HC-800, EA-1/EA-3), [openhc-control4](https://github.com/The1TrueJoe/openhc-control4)
+packages this onto the box's own video output, with a driver that adds the box's IO.
+
 ## Layout
 - `lib/` — submodule: wire protocol, sink, navigator model, REST loader
 - `backend/` — Rust (axum) server: sink + REST sync + websocket + static serve
@@ -67,8 +70,12 @@ Arrow keys / Enter navigate (Norigin). This is the UI you'll ship.
    status bar shows the room being navigated.
 
 ### 3. Go live (real project + control)
-Provide a controller host + JWT so the UI shows your real project and tiles control
-real devices (see token minting below):
+Nothing to do: once the driver connects it mints a REST token on the controller and
+sends it over (`auth` frame), and the UI switches from the demo to your real project
+with live control. The driver's **Token Status** property shows the last mint.
+
+To supply credentials yourself instead (driver's **Send Project Token** = `No`, or an
+older driver), give the backend a controller host + JWT (see token minting below):
 ```sh
 # Docker: put these in a .env next to docker-compose.yml
 C4_HOST=https://10.0.0.107
@@ -88,14 +95,15 @@ cd frontend && npm install && npm run dev    # http://localhost:5173, proxies to
 ## Config (backend env)
 | Var | Default | Meaning |
 |---|---|---|
-| `C4_HOST` | (unset) | Controller base URL, e.g. `https://10.0.0.107`. Unset ⇒ project empty, nav events still stream. |
-| `C4_TOKEN` | (unset) | Bearer JWT for the REST API. |
+| `C4_HOST` | (unset) | Controller base URL, e.g. `https://10.0.0.107`. Optional — the driver's token replaces it. Unset and no driver ⇒ demo project. |
+| `C4_TOKEN` | (unset) | Bearer JWT for the REST API. Optional, as above. |
 | `SINK_ADDR` | `0.0.0.0:9010` | Where the driver connects. |
 | `HTTP_ADDR` | `0.0.0.0:8080` | UI + websocket. |
 | `WEB_DIR` | `../frontend/dist` | Built React app. |
 
 ### Getting `C4_TOKEN`
-The REST API needs a Bearer JWT (`POST /api/v1/localjwt`, client-cert gated). Mint one:
+Only needed when the driver isn't sending one. The REST API needs a Bearer JWT
+(`POST /api/v1/localjwt`, client-cert gated). Mint one:
 ```sh
 C4_SSH_PASS='<controller root pw>' ./scripts/mint-token.sh --env   # writes .env
 # or: C4_SSH_KEY=~/.ssh/ea3_key ./scripts/mint-token.sh --env
